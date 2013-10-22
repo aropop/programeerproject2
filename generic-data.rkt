@@ -6,9 +6,7 @@
     (init name value)
     
     (field [name~ name] [value~ value])
-
-    
-    
+  
     (define/public (get-name)
       name~)
     

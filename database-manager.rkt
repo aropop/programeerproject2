@@ -14,6 +14,10 @@
       (query-exec con~ sql))
     
     (define/public (execute/return sql)
-      (query-rows con~ sql))
+      (new db-table-data% (query-rows con~ sql)))
+    
+    (define/public (num)
+      
+    
     )
   )
