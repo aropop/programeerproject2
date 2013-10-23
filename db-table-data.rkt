@@ -1,13 +1,16 @@
 #lang racket
 (require "macros.rkt")
 
+(provide db-table-data%
+         )
+
 (define db-table-data%
   (class object%
-    (init list-of-vectors) 
+    (init query-result) 
     
     (define*
-      [data~ list-of-vectors]
       [index~ 0]
+      [data~ query-result]
       [amount-of-rows~ 'not-counted]) ;stored for performance
     
     (super-new)
@@ -26,9 +29,14 @@
     
     (define/public (get-next-row-colum colum-id)
       (let ([row (get-next-row)])
-        (if (> colum-id (vector-length row)
+        (if (> colum-id (vector-length row))
                (error "colum id out of bounds")
-               (vector-ref colum-id row)))))
+               (vector-ref colum-id row))))
+    
+    (define/public (at-end?)
+      (empty? data~))
     
     )
   )
+(define x (new db-table-data% [query-result (list (vector 1 2 3))]))
+(define y (new db-table-data% [query-result (list (vector 1 5 3))]))

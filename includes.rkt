@@ -1,7 +1,10 @@
 #lang racket
 
-(require "macros.rkt")
 (#%provide (all-defined))
+(require "macros.rkt"
+         "master.rkt"
+         )
+
 
 (define racket-files 
   (find-files (lambda (x) 
