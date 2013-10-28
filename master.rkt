@@ -19,14 +19,7 @@
       )
     
     (define/public (init)
-      ;Get stewards from DB 
-      (set! stewards~ (get-data 'stewards))
-      ;initialize the stewards too
-      (set! stewards~ 
-            (map 
-             (lambda (steward)
-               (send steward init))
-             stewards~))
+      
       )
     
     

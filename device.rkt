@@ -3,6 +3,8 @@
 (define device%
   (class object%
     
+    (init (device-id -1) ;no device id yet 
+          )
     
     (field
       [place~ place]
@@ -12,6 +14,9 @@
     
     (define/public (recieve-message message)
       (set! current-message~ message))
+    
+    (define/public (get-type)
+      'device)
     
     )
   )

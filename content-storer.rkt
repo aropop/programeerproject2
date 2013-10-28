@@ -1,15 +1,19 @@
 #lang racket
 
+(require "macros.rkt")
 (#%provide content-storer%)
 
 (define content-storer%
   (class object%
     (super-new)
     
-    (init content-provider~
-          database-manager~
+    (init content-provider
+          database-manager
           )
     
+    (define* 
+      [content-provider~ content-provider]
+      [database-manager~ database-manager])
     
     
     (define/public (store something)
@@ -29,10 +33,9 @@
                     (send generic-data-object get-type)
                     "', '"
                     (send generic-data-object get-value-as-string)
-                    "
+                    "')")])
+        (send database-manager~ execute/no-return query)))
     
-    (define/private (build-store-query)
-      'test)
     
     )
   )

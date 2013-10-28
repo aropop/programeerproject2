@@ -1,6 +1,7 @@
 #lang racket
 
-(#%require "database-manager.rkt")
+(require "database-manager.rkt"
+         "steward.rkt")
 
 (#%provide content-provider%)
 
@@ -8,13 +9,45 @@
   (class object%
     (super-new)
     
-    (field (db-manager (new database-manager%)))
+    (field (db-manager~ (new database-manager%)))
     
     (define/public (get-stored-data which room)
       (cond ((eq? which 'avg-temp)
-             (send db-manager execute/return (build-select-query which room)))
+             (send db-manager~ execute/return (build-select-query which room)))
             (else
              (error "Unknown data stored, couldn't get"))))
+    
+    (define/public (get-stewards master)
+      (let* ([query "SELECT steward_id, room_name FROM Steward"]
+             [steward-data (send db-manager~ execute/return query)]
+             [create-steward (lambda (id place)
+                               (let ([devices (get-devices id)])
+                                 (new steward% 
+                                      [place place]
+                                      [master master]
+                                      [devices devices]
+                                      [is-already-stored #t]
+                                      [steward-id id])))])
+        (send steward-data get-next-row)
+        (let loop
+          ([stewards-list '()])
+          (send steward-data get-next-row)
+          (if (send steward-data at-end?)            
+              stewards-list
+              (loop
+               (cons (create-steward 
+                      (send steward-data get-current-row-colum 0)
+                      (send steward-data get-current-row-colum 1))
+                     stewards-list))))
+        )
+      )
+    
+    
+    (define/private (get-devices steward-id)
+      (let* ([query (string-append "SELECT device_id, type FROM Device WHERE steward_id=" (number->string steward-id))])
+        'nothing))
+    
+    
     
     (define/private (build-select-query which room)
       (cond [(eq? which 'avg-temp)

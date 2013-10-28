@@ -11,14 +11,19 @@
     (define*
       [index~ 0]
       [data~ query-result]
-      [amount-of-rows~ 'not-counted]) ;stored for performance
+      [amount-of-rows~ 'not-counted];stored for performance
+      [current-row 'none]) 
     
     (super-new)
     
     (define/public (get-next-row)
       (let ([ret  (list-ref data~ index~)])
+        (set! current-row ret)
         (set! index~ (+ index~ 1))
         ret))
+    
+    (define/public (get-current-row-colum num)
+      (vector-ref current-row num))
     
     (define/public (number-rows)
       (if (eq? amount-of-rows~ 'not-counted)
