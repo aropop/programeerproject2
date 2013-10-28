@@ -1,6 +1,7 @@
 #lang racket
 
 (provide define*)
+
 (define-syntax define*
   (syntax-rules ()
     [(define* [a b]) (define a b)]

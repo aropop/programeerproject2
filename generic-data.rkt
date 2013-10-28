@@ -6,12 +6,21 @@
     (init name value)
     
     (field [name~ name] [value~ value])
-  
+    
     (define/public (get-name)
       name~)
     
     (define/public (get-value)
       value~)
+    
+    ;for queries
+    (define/public (get-value-as-string)
+      (cond [(number? value~) (number->string value~)]
+            [(string? value~) value~]
+            [else (error "Generic data cannot convert this to string" value~)]))
+    
+    (define/public (get-type)
+      (get-name))
     
     (define/public (set-value! val)
       (set! value~ val))
@@ -28,7 +37,7 @@
     (inherit/super set-value! get-value)
     
     (super-new [name 'temp] [value value])
-
+    
     (define/public (to-celcius)
       (cond [(not celcius~)
              (begin 
@@ -46,5 +55,13 @@
       (if celcius~
           'celcius
           'fahrenheit))
+    
+    (define (get-type)
+      (if celcius~
+          'temp-celcius
+          'temp-fahrenheit))
+    (override get-type)
+    
+    
     )
   )
