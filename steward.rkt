@@ -24,11 +24,11 @@
     
     (super-new)
     
-    (define/private (get-device device-symbol)
+    (define/private (get-device device-id)
       (let devices-iter
         ([index 0])
         (let ([current-device (vector-ref index devices~)])
-          (cond [(eq? device-symbol (send current-device get-device-symbol))
+          (cond [(eq? device-id (get-field id current-device))
                  current-device]
                 [else (devices-iter (+ index 1))]))))
     
@@ -49,6 +49,20 @@
           (error "This object already has an id" this)
           (set! steward-id~ id)))
     
-  
-  )      
-)
+    
+    ;hier komt in de 2de fase een methode om wireless te communiceren, voorlopig gewoon send message sturen
+    (define/public (get-input-port device-id)
+      (let ([device (get-device device-id)])
+        (send device get-input-port)
+        )
+      )
+    
+    (define/public (get-ouput-port device-id)
+      (let ([device (get-device device-id)])
+        (send device get-output-port)
+        )
+      )
+    
+    
+    )      
+  )

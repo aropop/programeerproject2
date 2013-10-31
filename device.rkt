@@ -3,11 +3,13 @@
 (define device%
   (class object%
     
-    (init (device-id -1) ;no device id yet 
+    (init 
+     (device-id -1) ;no device id yet 
           )
     
+    (init-field (place~ 'no-place))
+    
     (field
-      [place~ place]
       [answer~ 'no-question-asked]
       [current-message~ 'no-message]
       )
