@@ -1,24 +1,77 @@
 #lang racket
 
+(require "macros.rkt")
+
 (define device%
   (class object%
-    
+    (super-new)
     (init 
      (device-id -1) ;no device id yet 
-          )
+     )
     
     (init-field (place~ 'no-place))
     
-    (field
-      [answer~ 'no-question-asked]
-      [current-message~ 'no-message]
+    (define*
+      [input-pipe~ 'init]
+      [output-pipe~ 'init]
+      [input-port~ 'init]
       )
+    
+    (field
+     [answer~ 'no-question-asked]
+     [current-message~ 'no-message]
+     [end-message~ '(END)]
+     )
+    
+    (abstract handle-message)
     
     (define/public (recieve-message message)
       (set! current-message~ message))
     
+    ;content-storer dispatch
     (define/public (get-type)
       'device)
+    
+    (define/public (get-unknown)
+      '(Unknown Message))
+    
+    ;voor de reads
+    (define/public (get-input-port)
+      (cond [(eq? input-pipe~ 'init)
+             (get-output-port) ;instantiate the output port first, other wise we can't use any pipes
+             (get-input-port)]
+            [else
+             (let* ([read-lambda
+                     (lambda (skip) 
+                       (begin 
+                         (let-values ([(in out) (make-pipe)])
+                           (set! current-message~ (read input-pipe~)) ;set the current message knowing it's not the last one                                
+                           (handle-message) ;demand that the current message is handled
+                           (write answer~ out)
+                           in)))];return the answer
+                    [input 
+                     (make-input-port
+                      'device-input-port
+                      read-lambda 
+                      #f
+                      (lambda () 'closed)) ;close the port                     
+                     ])
+               (set! input-port~ input)
+               input-port~)
+             ]
+            ))
+    
+    ;voor de writes
+    (define/public (get-output-port)
+      ;test if the pipe is already set
+      (if (eq? output-pipe~ 'init)
+          ;if not we need to set it
+          (let-values ([(in out) (make-pipe)])
+            (set! input-pipe~ in)
+            (set! output-pipe~ out)
+            output-pipe~)
+          output-pipe~))
+    
     
     )
   )
@@ -31,19 +84,51 @@
      [state~ 'OFF]
      )
     
+    (inherit-field current-message~ answer~)
+    (inherit get-unknown)
+    
     (define accepted-states '(ON OFF))
     
     (define/public (get-state)
       state~)
+    
+    (define/private (get-state-datum)
+      `(ACK (POW ,state~)))
     
     (define/public (set-state! new-state)
       (if (not (memq new-state accepted-states))
           (error "Unaccepted state in switch")
           (set! state~ new-state)))
     
+    (define/override (handle-message)
+      (let ([type (car current-message~)])
+        (cond 
+          ;Getters
+          [(eq? type 'GET)
+           
+           (let ([command (cadr current-message~)])
+             (cond [(or (eq? command 'POW) 
+                        (eq? command 'ALL))
+                    (set! answer~ (get-state-datum))]
+                   [else 
+                    (set! answer~ (get-unknown))]))]
+          
+          ;Setters
+          [(eq? type 'PUT)
+           (let* ([command-lst (cadr current-message~)]
+                  [command (car command-lst)]
+                  [parameter (cadr command-lst)])
+             (cond [(eq? command 'POW)
+                    (set-state! parameter)
+                    (set! answer~ (get-state-datum))]
+                   [else (get-unknown)]))]
+          
+          [else 
+           (set! answer~ (get-unknown))]))
+      answer~)
+    
     )
   )
-      
-    
-    
-      
+
+
+
