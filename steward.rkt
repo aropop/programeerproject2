@@ -14,7 +14,7 @@
     
     (init-field 
      [name~ "Unnamed device"]
-     [serie-number~ steward-id]
+     [serial-number~ steward-id]
      [communication-adress~ 0])
     
     (define*
