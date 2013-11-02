@@ -12,6 +12,11 @@
           (steward-id -1) ;it is not stored in the db yet
           (is-already-stored #f))
     
+    (init-field 
+     [name~ "Unnamed device"]
+     [serie-number~ steward-id]
+     [communication-adress~ 0])
+    
     (define*
       [place-in-house~ place]
       [devices~ devices]
