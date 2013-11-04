@@ -18,15 +18,18 @@
              (error "Unknown data stored, couldn't get"))))
     
     (define/public (get-stewards master)
-      (let* ([query "SELECT steward_id, room_name FROM Steward"]
+      (let* ([query "SELECT steward_id, room_name, name, serial_number, communication_adress FROM Steward"]
              [steward-data (send db-manager~ execute/return query)]
-             [create-steward (lambda (id place)
+             [create-steward (lambda (id place name serial_number communication_adress)
                                (let ([devices (get-devices id)])
                                  (new steward% 
                                       [place place]
                                       [master master]
                                       [devices devices]
                                       [is-already-stored #t]
+                                      [name~ name]
+                                      [serial-number~ serial_number]
+                                      [communication-adress communication_adress]
                                       [steward-id id])))])
         (send steward-data get-next-row)
         (let loop
@@ -37,7 +40,10 @@
               (loop
                (cons (create-steward 
                       (send steward-data get-current-row-colum 0)
-                      (send steward-data get-current-row-colum 1))
+                      (send steward-data get-current-row-colum 1)
+                      (send steward-data get-current-row-colum 2)
+                      (send steward-data get-current-row-colum 3)
+                      (send steward-data get-current-row-colum 4))
                      stewards-list))))
         )
       )

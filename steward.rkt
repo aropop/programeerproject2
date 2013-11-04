@@ -44,6 +44,10 @@
         (write `(GET ,type-of-data) device-output-port)
         (read device-input-port)))
     
+    ;defines if this steward is already in the database
+    (define/public (is-already-stored?)
+      (> steward-id~ 0))
+    
     ;storer cond support
     (define/public (get-type)
       'steward)

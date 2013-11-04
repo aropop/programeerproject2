@@ -5,11 +5,10 @@
 (define device%
   (class object%
     (super-new)
-    (init 
-     (device-id -1) ;no device id yet 
-     )
+   
     
-    (init-field (place~ 'no-place))
+    (init-field [place~ 'no-place]
+                [device-id~ -1])
     
     (define*
       [input-pipe~ 'init]
@@ -23,7 +22,7 @@
      [end-message~ '(END)]
      )
     
-    (abstract handle-message)
+    (abstract handle-message device-type)
     
     (define/public (recieve-message message)
       (set! current-message~ message))
@@ -31,6 +30,10 @@
     ;content-storer dispatch
     (define/public (get-type)
       'device)
+    
+    ;is this device already in the database
+    (define/public (is-already-stored?)
+      (< device-id~ 0))
     
     (define/public (get-unknown)
       '(Unknown Message))
@@ -91,6 +94,9 @@
     
     (define/public (get-state)
       state~)
+    
+    (define/override (get-device-type)
+      'switch)
     
     (define/private (get-state-datum)
       `(ACK (POW ,state~)))
