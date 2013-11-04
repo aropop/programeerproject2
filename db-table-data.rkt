@@ -10,20 +10,23 @@
     
     (define*
       [index~ 0]
+      [at-end~ #f]
       [data~ query-result]
       [amount-of-rows~ 'not-counted];stored for performance
-      [current-row 'none]) 
+      [current-row~ 'none]) 
     
     (super-new)
     
     (define/public (get-next-row)
+      (if (>= index~ (number-rows))
+          (set! at-end~ #t)
       (let ([ret  (list-ref data~ index~)])
-        (set! current-row ret)
+        (set! current-row~ ret)
         (set! index~ (+ index~ 1))
-        ret))
+        ret)))
     
     (define/public (get-current-row-colum num)
-      (vector-ref current-row num))
+      (vector-ref current-row~ num))
     
     (define/public (number-rows)
       (if (eq? amount-of-rows~ 'not-counted)
@@ -39,7 +42,9 @@
                (vector-ref colum-id row))))
     
     (define/public (at-end?)
-      (empty? data~))
+      (or
+       at-end~
+       (empty? current-row~)))
     
     )
   )
