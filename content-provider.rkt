@@ -1,7 +1,8 @@
 #lang racket
 
 (require "database-manager.rkt"
-         "steward.rkt")
+         "steward.rkt"
+         "macros.rkt")
 
 (#%provide content-provider%)
 
@@ -9,7 +10,10 @@
   (class object%
     (super-new)
     
-    (field (db-manager~ (new database-manager%)))
+    (init database-manager)
+    
+    (define*
+     [db-manager~ database-manager])
     
     (define/public (get-stored-data which room)
       (cond ((eq? which 'avg-temp)
@@ -23,14 +27,14 @@
              [create-steward (lambda (id place name serial_number communication_adress)
                                (let ([devices (get-devices id)])
                                  (new steward% 
-                                      [place place]
+                                      [place~ place]
                                       [master master]
                                       [devices devices]
                                       [is-already-stored #t]
                                       [name~ name]
                                       [serial-number~ serial_number]
-                                      [communication-adress communication_adress]
-                                      [steward-id id])))])
+                                      [communication-adress~ communication_adress]
+                                      [steward-id~ id])))])
         (send steward-data get-next-row)
         (let loop
           ([stewards-list '()])

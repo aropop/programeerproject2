@@ -1,7 +1,7 @@
 #lang racket
 
 (require "macros.rkt")
-
+(provide device% switch%)
 (define device%
   (class object%
     (super-new)
@@ -22,7 +22,7 @@
      [end-message~ '(END)]
      )
     
-    (abstract handle-message device-type)
+    (abstract handle-message get-device-type)
     
     (define/public (recieve-message message)
       (set! current-message~ message))
@@ -33,7 +33,7 @@
     
     ;is this device already in the database
     (define/public (is-already-stored?)
-      (< device-id~ 0))
+      (> device-id~ 0))
     
     (define/public (get-unknown)
       '(Unknown Message))

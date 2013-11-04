@@ -12,6 +12,7 @@
     (define*
       [con~ (sqlite3-connect #:database (get-field db-path SETTINGS))]
       [initialized~ #f]
+      [last-query~ 'none]
       [install-query~ 
        (list 
 "CREATE TABLE Room (
@@ -40,15 +41,17 @@ steward_id INT REFERENCES Steward(steward_id) ON UPDATE RESTRICT ON DELETE CASCA
 );" )]
       )
     
-    
+    ;Insert, delet and update queries
     (define/public (execute/no-return sql)
       (if initialized~
-          (query-exec con~ sql)
+          ;save last query so we can get additional info 
+          (set! last-query~ (query con~ sql)) 
           (begin (do-init-tests)
                  (execute/no-return sql))
           )
       )
     
+    ;select queries where you expect a return
     (define/public (execute/return sql)
       (if initialized~
           (new db-table-data% 
@@ -57,6 +60,14 @@ steward_id INT REFERENCES Steward(steward_id) ON UPDATE RESTRICT ON DELETE CASCA
                  (execute/return sql))
           )
       )
+    
+    ;Returns the last inserted id after an insert operation
+    ;More info on simple restult structs http://docs.racket-lang.org/db/query-api.html#%28def._%28%28lib._db%2Fbase..rkt%29._simple-result%29%29
+    (define/public (last-inserted-id)
+      (if (eq? 'none last-query~)
+          (error "No query executed to get last inserted id")
+          (cdar (simple-result-info last-query~)))) 
+    
     
     (define/private (do-init-tests)
       (if (not (is-table-installed?))

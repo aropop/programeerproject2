@@ -25,6 +25,9 @@
                (store-data something)]
               [(is-type? 'device)
                (store-device something)]
+              [(is-type? 'steward)
+               (store-steward something)]
+              
               [else (error "Content-storer: Cannot store this" something)]
               )
         )
@@ -43,13 +46,13 @@
     ;stores a device, when it is not already stored it expects an steward-id
     (define/private (store-device device . steward-id)
       (cond [(send device is-already-stored?)
-             (let* ([device-id (get-field device-id device)]
+             (let* ([device-id (get-field device-id~ device)]
                     [type (send device get-type)]
                     [query (string-append "UPDATE Device SET type='" 
                                           (symbol->string type)
                                           "' WHERE device_id="
                                           (number->string device-id))])
-                    (send database-manager~ execute/no-return device))
+               (send database-manager~ execute/no-return query))
              ]
             [else
              (let* ([device-type (send device get-device-type)]
@@ -61,14 +64,52 @@
                                           "', '"
                                           (number->string steward-id)
                                           "')")])
-               (send database-manager~ execute/no-return device)
+               (send database-manager~ execute/no-return query)
                )]
             )
       )
     
+    ;stores a steward to the database
     (define/private (store-steward steward)
-      
-      'todo
+      ;get all the info 
+      (let ([steward-id (get-field steward-id~ steward)]
+            [name (get-field name~ steward)]
+            [com-adr (get-field communication-adress~ steward)]
+            [ser-nbr (get-field serial-number~ steward)]
+            [room (get-field place~ steward)])
+        ;update query or insert query
+        (cond [(send steward is-already-stored?) ;device is already in the database so we need to update
+               (let ([query (string-append "UPDATE Steward SET "
+                                           "serial_number='" (number->string ser-nbr) "', "
+                                           "communication_adress='" com-adr "', "
+                                           "name='" name "', "
+                                           "room_name='" room "' "
+                                           "WHERE steward_id=" (number->string steward-id))]
+                     )
+                 ;store the query
+                 (send database-manager~ execute/no-return query)
+                 )
+               ]
+              [else ;steward is not stored already
+               (let ([query (string-append
+                             "INSERT INTO Steward (name, serial_number, communication_adress, room_name) VALUES ('"
+                             name "', '"
+                             (number->string ser-nbr) "', '"
+                             com-adr "', '"
+                             room "')")])
+                 ;store
+                 (send database-manager~ execute/no-return query)
+                 ;set the device id right so that the devices are stored with the correct id
+                 (set! steward-id (send database-manager~ last-inserted-id))
+                 )
+               ]
+              )
+        
+        ;store the devices too
+        (map (lambda (device)
+               (store-device device steward-id)) ;we do not know if it is already stored so we add the id
+             (send steward get-device-list))           
+        )
       )
     
     

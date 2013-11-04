@@ -8,24 +8,23 @@
     
     (init master
           devices
-          place
-          (steward-id -1) ;it is not stored in the db yet
           (is-already-stored #f))
+    
     
     (init-field 
      [name~ "Unnamed device"]
-     [serial-number~ steward-id]
-     [communication-adress~ 0])
+     [serial-number~ 0]
+     [communication-adress~ "No address"]
+     [steward-id~ -1]
+     [place~ 'no-where]
+     )
+    
     
     (define*
-      [place-in-house~ place]
       [devices~ devices]
       [master~ master]
-      [steward-id~ steward-id]
-      [is-already-stored~ is-already-stored]
       )
     
-    (field [is-in-db~ is-already-stored])
     
     (super-new)
     
@@ -36,6 +35,9 @@
           (cond [(eq? device-id (get-field id current-device))
                  current-device]
                 [else (devices-iter (+ index 1))]))))
+    
+    (define/public (get-device-list)
+      devices~)
     
     (define/public (get-data-from-devices device-symbol type-of-data)
       (let* ([device (get-device device-symbol)]
