@@ -18,12 +18,17 @@
       [content-storer~ 'uninitialised]
       )
     
+    ;loads everything in place 
     (define/public (init)
+      ;make a database manager object
       (let ([db-manager (new database-manager%)])
+        ;initialise both content provider and content storer
         (set! content-provider~ (new content-provider% [database-manager db-manager]))
         (set! content-storer~ (new content-storer% 
                                    [content-storer content-storer~]
-                                   [database-manager db-manager])))
+                                   [database-manager db-manager]))
+        (set! stewards~ (send content-provider~ get-stewards this)) 
+        )
       )
                                    
     
@@ -31,9 +36,7 @@
       (send content-provider~ get-stored-data which)
       )
     
-    
-    
-    
+
     (define/private (store data)
       data)
     

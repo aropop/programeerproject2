@@ -17,6 +17,7 @@
       [database-manager~ database-manager])
     
     
+    ;store dispatch which allows easy storing
     (define/public (store something)
       (let* ([type (send something get-type)]
              [is-type? (lambda (submitted-type)
@@ -33,7 +34,27 @@
         )
       )
     
+    ;Help procedure that returns wether a room/place is stored
+    (define/private (is-room-stored? room)
+      (let* (
+             [query (string-append "SELECT * FROM Room WHERE name='" room "'")]
+             [result (send database-manager~ execute/return query)]
+             )
+        ;if there are no entries the data should be at end immidiatly
+        (not (send result at-end?))))
     
+    ;stores a place/room
+    (define/private (store-room room-name)
+      (send 
+       database-manager~
+       execute/no-return
+       (string-append
+        "INSERT INTO Room VALUES ('" room-name "')"
+        )
+       )
+      )
+    
+    ;stores a generic data object
     (define/private (store-data generic-data-object)
       (let ([query (string-append
                     "INSERT INTO Data (type, value) VALUES ('" 
@@ -91,13 +112,18 @@
                  )
                ]
               [else ;steward is not stored already
+               ;make sure the room is stored
+               (cond [(not (is-room-stored? room))
+                      ;if not stored store it
+                      (store-room room)])
+               ;build the query to store the steward
                (let ([query (string-append
                              "INSERT INTO Steward (name, serial_number, communication_adress, room_name) VALUES ('"
                              name "', '"
                              (number->string ser-nbr) "', '"
                              com-adr "', '"
                              room "')")])
-                 ;store
+                 ;execute query
                  (send database-manager~ execute/no-return query)
                  ;set the device id right so that the devices are stored with the correct id
                  (set! steward-id (send database-manager~ last-inserted-id))

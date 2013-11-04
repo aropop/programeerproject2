@@ -10,7 +10,7 @@
     
     (define*
       [index~ 0]
-      [at-end~ #f]
+      [at-end~ (empty? query-result)] ; if no data is initialised this data is empty
       [data~ query-result]
       [amount-of-rows~ 'not-counted];stored for performance
       [current-row~ 'none]) 
