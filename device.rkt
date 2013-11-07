@@ -1,7 +1,9 @@
 #lang racket
 
-(require "macros.rkt")
-(provide device% switch%)
+(require "macros.rkt"
+         "generic-data.rkt")
+(provide switch% thermometer%)
+(define supported-device-types '(Switch Thermometer))
 (define device%
   (class object%
     (super-new)
@@ -128,6 +130,53 @@
                     (set-state! parameter)
                     (set! answer~ (get-state-datum))]
                    [else (get-unknown)]))]
+          
+          [else 
+           (set! answer~ (get-unknown))]))
+      answer~)
+    
+    )
+  )
+
+(define thermometer%
+  (class device%
+    (super-new)
+    
+    (field 
+     [temperature~ (new temperature-data% [value 32])]
+     )
+    
+    (inherit-field current-message~ answer~)
+    (inherit get-unknown)
+   
+    
+    (define/public (get-temperature)
+      (send temperature~ get-value))
+    
+    (define/override (get-device-type)
+      'thermometer)
+    
+    (define/private (get-temp-datum)
+      (let ((t (get-temperature))
+            (c-or-f (send temperature~ which-unit)))
+      `(ACK (TEMP ,t) (UNIT ,c-or-f))))
+    
+    
+    (define/override (handle-message)
+      (let ([type (car current-message~)])
+        (cond 
+          ;Getters
+          [(eq? type 'GET)
+           
+           (let ([command (cadr current-message~)])
+             (cond [(or (eq? command 'TEMP) 
+                        (eq? command 'ALL))
+                    (set! answer~ (get-temp-datum))]
+                   [else 
+                    (set! answer~ (get-unknown))]))]
+          
+          ;Setters
+          ;no setters
           
           [else 
            (set! answer~ (get-unknown))]))

@@ -1,5 +1,6 @@
 #lang racket
-
+(provide generic-data%
+         temperature-data%)
 (define generic-data%
   (class object%
     (super-new)
