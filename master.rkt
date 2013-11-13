@@ -32,10 +32,11 @@
       )
                                    
     
-    (define/public (get-data which)
+    (define/public (get-stored-data which)
       (send content-provider~ get-stored-data which)
       )
     
+
 
     (define/private (store data)
       data)

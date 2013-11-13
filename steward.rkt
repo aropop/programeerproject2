@@ -12,9 +12,6 @@
     
     
     (init-field 
-     [name~ "Unnamed device"]
-     [serial-number~ 0]
-     [communication-adress~ "No address"]
      [steward-id~ -1]
      [place~ 'no-where]
      )
@@ -28,14 +25,26 @@
     
     (super-new)
     
+
+    ;returns the device for the given id
+    ;filter:  http://docs.racket-lang.org/reference/pairs.html#%28def._%28%28lib._racket%2Fprivate%2Flist..rkt%29._filter%29%29
     (define/private (get-device device-id)
-      (let devices-iter
-        ([index 0])
-        (let ([current-device (vector-ref index devices~)])
-          (cond [(eq? device-id (get-field id current-device))
-                 current-device]
-                [else (devices-iter (+ index 1))]))))
+      (let ([filtered
+             (filter (lambda (device)
+                       (= device-id (get-field device-id~ device)))
+                     devices~)])
+        (if (empty? filtered)
+            (error "No such device in this steward, device id:" device-id " steward id:" steward-id~)
+            (car filtered))))
     
+    ;returns #t if the device is in the list
+    ;ormap : http://docs.racket-lang.org/reference/pairs.html#%28def._%28%28lib._racket%2Fprivate%2Fmap..rkt%29._ormap%29%29
+    (define/public (has-device device-id)
+      (ormap (lambda (device)
+               (= device-id (get-field device-id~ device)))
+             devices~))
+    
+    ;returns the list of device objects
     (define/public (get-device-list)
       devices~)
     
