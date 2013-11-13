@@ -6,7 +6,7 @@
   (class object%
     (field
       [db-path "./database/default"]
-      
+      [unknown-message '(Unknown Message)]
       )
     (super-new)
     )

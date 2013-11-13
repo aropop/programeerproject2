@@ -1,7 +1,8 @@
 #lang racket
 
 (require "macros.rkt"
-         "generic-data.rkt")
+         "generic-data.rkt"
+         "settings.rkt")
 (provide switch% thermometer%)
 (define supported-device-types '(Switch Thermometer))
 (define device%
@@ -27,10 +28,10 @@
      [end-message~ '(END)]
      )
     
+    ;abstract fields for the children of this object
     (abstract handle-message get-device-type)
     
-    (define/public (recieve-message message)
-      (set! current-message~ message))
+    
     
     ;content-storer dispatch
     (define/public (get-type)
@@ -40,16 +41,20 @@
     (define/public (is-already-stored?)
       (> device-id~ 0))
     
+    ;provides the message which has to be responded when you do not know the message
+    ;this is the same for every type of device
     (define/public (get-unknown)
-      '(Unknown Message))
+      (get-field unknown-message SETTINGS)) ;store it in the settings so it's easily accesable
     
-    ;voor de reads
+    ;returns the input port
     (define/public (get-input-port)
       (cond [(eq? input-pipe~ 'init)
-             (get-output-port) ;instantiate the output port first, other wise we can't use any pipes
+             (get-output-port) ;instantiate the output port first, other wise we can't use the pipe
              (get-input-port)]
             [else
-             (let* ([read-lambda
+             ;We make a costum input port so that when a read is done we can handle the message
+             ;without any steps between
+             (let* ([read-lambda ;the lambda needed in the make-input-port put in a let for clean code
                      (lambda (skip) 
                        (begin 
                          (let-values ([(in out) (make-pipe)])
@@ -84,6 +89,7 @@
     )
   )
 
+;Represents a switch
 (define switch%
   (class device%
     (super-new)

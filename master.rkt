@@ -31,15 +31,29 @@
         )
       )
                                    
-    
+    ;gets data out of the database
     (define/public (get-stored-data which)
       (send content-provider~ get-stored-data which)
       )
+    
+    ;sends the message directely to the device 
+    (define/public (get-direct-data device-id message)
+      (let ([steward (get-steward-for-device device-id)])
+        (send steward get-data-from-device device-id message)))
     
 
 
     (define/private (store data)
       data)
+    
+    ;returns the steward which has the device 
+    ;this adds an extra check whith correct error handling
+    (define/private (get-steward-for-device device-id)
+      (let ([filtered (filter (lambda (steward)
+                                (send steward has-device? device-id)))])
+        (if (empty? filtered)
+            (error "No such device on any of the masters' stewards, device id:" device-id)
+            (car (filtered)))))
     
     )
   )

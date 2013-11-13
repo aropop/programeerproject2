@@ -48,11 +48,16 @@
     (define/public (get-device-list)
       devices~)
     
-    (define/public (get-data-from-devices device-symbol type-of-data)
+    ;gets the data from a device
+    ;this garantees that there is always an equal amount of read and
+    ;writes which is needed for the integrity of the ports
+    (define/public (get-data-from-devices device-symbol message)
       (let* ([device (get-device device-symbol)]
              [device-output-port (send device get-output-port)]
              [device-input-port (send device get-input-port)])
-        (write `(GET ,type-of-data) device-output-port)
+        ;write the message to the output port
+        (write message device-output-port)
+        ;read the message
         (read device-input-port)))
     
     ;defines if this steward is already in the database
