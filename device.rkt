@@ -10,7 +10,10 @@
    
     
     (init-field [place~ 'no-place]
-                [device-id~ -1])
+                [device-id~ -1]
+                [communication-address~ 'none]
+                [name~ "No name"]
+                [serial-number~ 0])
     
     (define*
       [input-pipe~ 'init]
@@ -89,7 +92,7 @@
      [state~ 'OFF]
      )
     
-    (inherit-field current-message~ answer~)
+    (inherit-field current-message~ answer~ name~ communication-address~ serial-number~)
     (inherit get-unknown)
     
     (define accepted-states '(ON OFF))
@@ -146,7 +149,7 @@
      [temperature~ (new temperature-data% [value 32])]
      )
     
-    (inherit-field current-message~ answer~)
+    (inherit-field current-message~ answer~  name~ communication-address~ serial-number~)
     (inherit get-unknown)
    
     

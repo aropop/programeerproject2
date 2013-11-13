@@ -20,10 +20,10 @@
     (define/public (get-next-row)
       (if (>= index~ (number-rows))
           (set! at-end~ #t)
-      (let ([ret  (list-ref data~ index~)])
-        (set! current-row~ ret)
-        (set! index~ (+ index~ 1))
-        ret)))
+          (let ([ret  (list-ref data~ index~)])
+            (set! current-row~ ret)
+            (set! index~ (+ index~ 1))
+            ret)))
     
     (define/public (get-current-row-colum num)
       (vector-ref current-row~ num))
@@ -38,12 +38,12 @@
     (define/public (get-next-row-colum colum-id)
       (let ([row (get-next-row)])
         (if (> colum-id (vector-length row))
-               (error "colum id out of bounds")
-               (vector-ref colum-id row))))
+            (error "colum id out of bounds")
+            (vector-ref colum-id row))))
     
     (define/public (at-end?)
       (or
-       at-end~
+       (>= index~ (number-rows))
        (empty? current-row~)))
     
     )

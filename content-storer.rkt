@@ -66,44 +66,50 @@
     
     ;stores a device, when it is not already stored it expects an steward-id
     (define/private (store-device device . steward-id)
-      (cond [(send device is-already-stored?)
-             (let* ([device-id (get-field device-id~ device)]
-                    [type (send device get-type)]
-                    [query (string-append "UPDATE Device SET type='" 
-                                          (symbol->string type)
-                                          "' WHERE device_id="
-                                          (number->string device-id))])
-               (send database-manager~ execute/no-return query))
-             ]
-            [else
-             (let* ([device-type (send device get-device-type)]
-                    [steward-id (if (empty? steward-id)
-                                    (error "Store device expects a steward id when not stored")
-                                    (car steward-id))]          
-                    [query (string-append "INSERT INTO Device (type, steward_id) VALUES ('"
-                                          (symbol->string device-type)
-                                          "', '"
-                                          (number->string steward-id)
-                                          "')")])
-               (send database-manager~ execute/no-return query)
-               )]
-            )
+      (let ([type (send device get-device-type)]
+            [name (get-field name~ device)]
+            [com-adr (get-field communication-address~ device)]
+            [ser-nbr (get-field serial-number~ device)])
+        (cond [(send device is-already-stored?)
+               (let* ([device-id (get-field device-id~ device)]
+                      [query (string-append "UPDATE Device SET type='" 
+                                            (symbol->string type) "', "
+                                            "serial_number='" (number->string ser-nbr) "', "
+                                            "communication_adress='" com-adr "', "
+                                            "name='" name "', "
+                                            "WHERE device_id="
+                                            (number->string device-id))])
+                 (send database-manager~ execute/no-return query))
+               ]
+              [else
+               (let* ([steward-id (if (empty? steward-id)
+                                      (error "Store device expects a steward id when not stored")
+                                      (car steward-id))]          
+                      [query (string-append "INSERT INTO Device (type, name, serial_number, communication_adress, steward_id) VALUES ('"
+                                            (symbol->string type)
+                                            "', '"
+                                            name
+                                            "', '"
+                                            (number->string ser-nbr)
+                                            "', '"
+                                            com-adr
+                                            "', '"
+                                            (number->string steward-id)
+                                            "')")])
+                 (send database-manager~ execute/no-return query)
+                 )]
+              )
+        )
       )
     
     ;stores a steward to the database
     (define/private (store-steward steward)
       ;get all the info 
       (let ([steward-id (get-field steward-id~ steward)]
-            [name (get-field name~ steward)]
-            [com-adr (get-field communication-adress~ steward)]
-            [ser-nbr (get-field serial-number~ steward)]
             [room (get-field place~ steward)])
         ;update query or insert query
         (cond [(send steward is-already-stored?) ;device is already in the database so we need to update
                (let ([query (string-append "UPDATE Steward SET "
-                                           "serial_number='" (number->string ser-nbr) "', "
-                                           "communication_adress='" com-adr "', "
-                                           "name='" name "', "
                                            "room_name='" room "' "
                                            "WHERE steward_id=" (number->string steward-id))]
                      )
@@ -118,10 +124,7 @@
                       (store-room room)])
                ;build the query to store the steward
                (let ([query (string-append
-                             "INSERT INTO Steward (name, serial_number, communication_adress, room_name) VALUES ('"
-                             name "', '"
-                             (number->string ser-nbr) "', '"
-                             com-adr "', '"
+                             "INSERT INTO Steward (room_name) VALUES ('"
                              room "')")])
                  ;execute query
                  (send database-manager~ execute/no-return query)

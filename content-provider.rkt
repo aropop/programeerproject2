@@ -23,72 +23,84 @@
              (error "Unknown data stored, couldn't get"))))
     
     (define/public (get-stewards master)
-      (let* ([query "SELECT steward_id, room_name, name, serial_number, communication_adress FROM Steward"]
+      (let* ([query "SELECT steward_id, room_name FROM Steward"]
              [steward-data (send db-manager~ execute/return query)]
-             [create-steward (lambda (id place name serial_number communication_adress)
+             [create-steward (lambda (id place)
                                (let ([devices (get-devices id place)])
                                  (new steward% 
                                       [place~ place]
                                       [master master]
                                       [devices devices]
                                       [is-already-stored #t]
-                                      [name~ name]
-                                      [serial-number~ serial_number]
-                                      [communication-adress~ communication_adress]
                                       [steward-id~ id])))])
-        (send steward-data get-next-row)
         (let loop
-          ([stewards-list '()])
-          (send steward-data get-next-row)
+          ([stewards-list '()])          
           (if (send steward-data at-end?)            
               stewards-list
-              (loop
-               (cons (create-steward 
-                      (send steward-data get-current-row-colum 0)
-                      (send steward-data get-current-row-colum 1)
-                      (send steward-data get-current-row-colum 2)
-                      (send steward-data get-current-row-colum 3)
-                      (send steward-data get-current-row-colum 4))
-                     stewards-list))))
+              (begin
+                (send steward-data get-next-row)
+                (loop
+                 (cons (create-steward 
+                        (send steward-data get-current-row-colum 0)
+                        (send steward-data get-current-row-colum 1))
+                       stewards-list)))))
         )
       )
     
     
     (define/private (get-devices steward-id place)
       (let* (;prepare the query
-             [query (string-append "SELECT device_id, type FROM Device WHERE steward_id=" (number->string steward-id))]
+             [query (string-append "SELECT device_id, type , name, serial_number, communication_adress FROM Device WHERE steward_id=" (number->string steward-id))]
              ;execute the query
              [query-result (send db-manager~ execute/return query)]
              ;create a procedure that creates the objects which represent the devices
-             [create-device (lambda (type device-id) 
+             [create-device (lambda (type device-id name serial-number com-adr) 
                               (cond [(eq? type 'switch) 
-                                     (new switch% [device-id~ device-id] [place~ place])]
+                                     (new switch%
+                                          [device-id~ device-id]
+                                          [place~ place]
+                                          [communication-address~ com-adr]
+                                          [name~ name]
+                                          [serial-number~ serial-number])]
+                                    [(eq? type 'thermometer)
+                                     (new thermometer%
+                                          [device-id~ device-id]
+                                          [place~ place]
+                                          [communication-address~ com-adr]
+                                          [name~ name]
+                                          [serial-number~ serial-number])]
+                                    
                                     [else
                                      (error "Cannot create device from type " type)]))])
-             ;loop over the results
-             (let loop 
-               ([devices-list '()])
-               (send query-result get-next-row)
-               (if (send query-result at-end?) ;stop condition
-                   devices-list ;return list of devices 
-                   (loop
-                    (cons (create-device ;create a device and put it in the list
-                           (string->symbol (send query-result get-current-row-colum 1))
-                           (send query-result get-current-row-colum 0)))))
-               )                
-             )
+        ;loop over the results
+        (let loop 
+          ([devices-list '()])
+          (if (send query-result at-end?) ;stop condition
+              devices-list ;return list of devices 
+              (begin 
+                (send query-result get-next-row)
+                (loop
+                 (cons (create-device ;create a device and put it in the list
+                        (string->symbol (send query-result get-current-row-colum 1))
+                        (send query-result get-current-row-colum 0)
+                        (send query-result get-current-row-colum 2)
+                        (send query-result get-current-row-colum 3)
+                        (send query-result get-current-row-colum 4))
+                       devices-list))))
+          )                
         )
-      
-      
-      
-      (define/private (build-select-query which room)
-        (cond [(eq? which 'avg-temp)
-               (string-append "SELECT AVG(temp) FROM sensor-data WHERE room='" room "'")]
-              
-              [else
-               (error "Unknown data stored, couldn't get")]))
-      
-      
-      
       )
+    
+    
+    
+    (define/private (build-select-query which room)
+      (cond [(eq? which 'avg-temp)
+             (string-append "SELECT AVG(temp) FROM sensor-data WHERE room='" room "'")]
+            
+            [else
+             (error "Unknown data stored, couldn't get")]))
+    
+    
+    
     )
+  )

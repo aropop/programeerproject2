@@ -28,15 +28,15 @@ value TEXT NOT NULL
 
 "CREATE TABLE Steward (
 steward_id INTEGER PRIMARY KEY ASC AUTOINCREMENT,
-name VARCHAR(35) NOT NULL,
-communication_adress VARCHAR(50) NOT NULL,
-serial_number INT NOT NULL,
 room_name VARCHAR(30) REFERENCES Room(name) ON UPDATE CASCADE ON DELETE SET NULL
 );"
 
 "CREATE TABLE Device (
 device_id INTEGER PRIMARY KEY ASC AUTOINCREMENT,
 type VARCHAR(20) NOT NULL,
+name VARCHAR(35) NOT NULL,
+communication_adress VARCHAR(50) NOT NULL,
+serial_number INT NOT NULL,
 steward_id INT REFERENCES Steward(steward_id) ON UPDATE RESTRICT ON DELETE CASCADE
 );" )]
       )
