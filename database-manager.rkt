@@ -1,4 +1,14 @@
 #lang racket
+
+;---------------------------------------------------------------------
+;|
+;|    Database-manager.rkt 
+;|    Arno De Witte - Programmeerproject 2
+;|    Executes database queries
+;|
+;---------------------------------------------------------------------
+
+
 (require db)
 (require "settings.rkt")
 (require "db-table-data.rkt")

@@ -1,5 +1,13 @@
 #lang racket
 
+;---------------------------------------------------------------------
+;|
+;|    Content-storer.rkt 
+;|    Arno De Witte - Programmeerproject 2
+;|    Stores objects and data to the database
+;|
+;---------------------------------------------------------------------
+
 
 (require "macros.rkt")
 (#%provide content-storer%)

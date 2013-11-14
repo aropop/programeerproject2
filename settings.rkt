@@ -1,5 +1,14 @@
 #lang racket
 
+;---------------------------------------------------------------------
+;|
+;|    Content-provider.rkt 
+;|    Arno De Witte - Programmeerproject 2
+;|    Provides content from the database
+;|
+;---------------------------------------------------------------------
+
+
 (#%provide SETTINGS)
 
 (define settings%

@@ -1,5 +1,14 @@
 #lang racket
 
+;---------------------------------------------------------------------
+;|
+;|    Content-provider.rkt 
+;|    Arno De Witte - Programmeerproject 2
+;|    Provides content from the database
+;|
+;---------------------------------------------------------------------
+
+
 (require "macros.rkt"
          "generic-data.rkt"
          "settings.rkt")

@@ -1,4 +1,14 @@
 #lang racket
+
+;---------------------------------------------------------------------
+;|
+;|    db-table-data.rkt 
+;|    Arno De Witte - Programmeerproject 2
+;|    
+;|
+;---------------------------------------------------------------------
+
+
 (require "macros.rkt")
 
 (provide db-table-data%
