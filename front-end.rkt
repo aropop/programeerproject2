@@ -6,11 +6,14 @@
 ;|    Defines the frond end
 ;|
 ;---------------------------------------------------------------------
+
 (require web-server/servlet-env
          web-server/templates
          web-server/http/response-structs
          web-server/http/bindings
          "settings.rkt")
+
+(provide html-front-end%)
 
 (define front-end%
   (class object%
@@ -38,10 +41,11 @@
     (inherit-field master~)
     
     (define menuitems
-      (list '("home" . "Home") '("devices" . "Devices") '("data" ."Data")))
+      (list '("home" . "Home") '("stewards" . "Stewards") '("devices" . "Devices") '("data" ."Data")))
     (define home-page 'home)
     
     (define (dispatcher requests)
+      (display (request-bindings requests)) (newline)
       (let 
           (;handle the "static" elements of the site
            [page (extract-page (request-bindings requests))]
@@ -57,6 +61,14 @@
              (set! inside-main (include-template "templates/steward-table.html"))
              )
            ]
+          ;devices page
+          [(equal? page "devices")
+           (let* ([stewards (send master~ get-stewards)]
+                  [devices 
+                            (map (lambda (steward)
+                                   (cons steward (send steward get-device-list)))
+                                 stewards)])
+             (set! inside-main (include-template "templates/devices.html")))]
           
           ;standard page
           [else
@@ -78,7 +90,7 @@
             [title (get-field title SETTINGS)]
             [scripts '()]
             [stylesheets '("/style.css")];must be in the same directory
-            [favicon "images/favicon.png"]
+            [favicon "/images/favicon.png"]
             [author (get-field author SETTINGS)]
             [description (list "Home " "Automation " "System " "beschrijving")]
             )
@@ -115,9 +127,6 @@
       )
     
     
-    
-    (define/private (init)
-      'iets)
     
     )
   )

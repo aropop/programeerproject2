@@ -33,7 +33,7 @@
         ;initialise both content provider and content storer
         (set! content-provider~ (new content-provider% [database-manager db-manager]))
         (set! content-storer~ (new content-storer% 
-                                   [content-storer content-storer~]
+                                   [content-provider content-provider~]
                                    [database-manager db-manager]))
         (set! stewards~ (send content-provider~ get-stewards this)) 
         )
@@ -49,7 +49,13 @@
       (let ([steward (get-steward-for-device device-id)])
         (send steward get-data-from-device device-id message)))
     
-
+    ;Getter for the steward list
+    (define/public (get-stewards)
+      stewards~)
+    
+    ;Adds a steward
+    (define/public (add-device name place serial-port communication-address)
+      'dummy)
 
     
     ;returns the steward which has the device 

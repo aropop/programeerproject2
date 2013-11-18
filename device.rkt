@@ -38,7 +38,7 @@
      )
     
     ;abstract fields for the children of this object
-    (abstract handle-message get-device-type)
+    (abstract handle-message get-device-type get-status-message)
     
     
     
@@ -118,6 +118,9 @@
     (define/override (get-device-type)
       'switch)
     
+    (define/override (get-status-message)
+      '(GET POW))
+    
     (define/private (get-state-datum)
       `(ACK (POW ,state~)))
     
@@ -173,6 +176,9 @@
     
     (define/override (get-device-type)
       'thermometer)
+    
+    (define/override (get-status-message)
+      '(GET TEMP))
     
     (define/private (get-temp-datum)
       (let ((t (get-temperature))

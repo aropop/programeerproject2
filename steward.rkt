@@ -68,6 +68,10 @@
         ;read the message
         (read device-input-port)))
     
+    ;returns the status
+    (define/public (get-device-status device-id)
+      (get-data-from-devices device-id (send (get-device device-id) get-status-message)))
+    
     ;defines if this steward is already in the database
     (define/public (is-already-stored?)
       (> steward-id~ 0))
