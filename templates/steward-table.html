@@ -1,0 +1,11 @@
+<!-- steward table template -->
+<table id="steward-table">
+<th><td>ID</td><td>Room</td><td>Amount of devices</td></th>
+@in[s stewards]{
+<tr>
+<td> @(get-field steward-id~ s) </td>
+<td> @(get-field place~ s) </td>
+<td> @(length (send s get-devices-list)) </td>
+</tr>
+} 
+</table>
