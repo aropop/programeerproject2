@@ -16,6 +16,8 @@
     (field
       [db-path "./database/default"]
       [unknown-message '(Unknown Message)]
+      [author "Arno De Witte"]
+      [title "Control Your House"]
       )
     (super-new)
     )

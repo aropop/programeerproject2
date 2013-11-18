@@ -51,8 +51,6 @@
     
 
 
-    (define/private (store data)
-      data)
     
     ;returns the steward which has the device 
     ;this adds an extra check whith correct error handling
