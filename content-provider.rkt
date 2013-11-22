@@ -99,6 +99,11 @@
         )
       )
     
+    ;returns all rooms
+    (define/public (get-rooms)
+      (let* ([query "SELECT name FROM Room"]
+            [result (send db-manager~ execute/return query)])
+        (send result get-colum 0)))
     
     
     (define/private (build-select-query which room)

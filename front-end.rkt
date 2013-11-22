@@ -57,13 +57,14 @@
         (cond
           ;stewards page
           [(equal? page "stewards")
-           (let* ([stewards (send master~ get-stewards)])
+           (let* ([stewards  (send master~ get-stewards)])
              (set! inside-main (include-template "templates/steward-table.html"))
              )
            ]
           ;devices page
           [(equal? page "devices")
            (let* ([stewards (send master~ get-stewards)]
+                  [rooms (send master~ get-all-rooms)]
                   [devices 
                             (map (lambda (steward)
                                    (cons steward (send steward get-device-list)))

@@ -2,9 +2,9 @@
 
 ;---------------------------------------------------------------------
 ;|
-;|    Content-provider.rkt 
+;|    Generic-Data.rkt 
 ;|    Arno De Witte - Programmeerproject 2
-;|    Provides content from the database
+;|    Abstraction for diffrenct forms of data
 ;|
 ;---------------------------------------------------------------------
 

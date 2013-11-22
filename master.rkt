@@ -2,9 +2,9 @@
 
 ;---------------------------------------------------------------------
 ;|
-;|    Content-provider.rkt 
+;|    Master.rkt 
 ;|    Arno De Witte - Programmeerproject 2
-;|    Provides content from the database
+;|    Abstraction for the master computer
 ;|
 ;---------------------------------------------------------------------
 
@@ -56,6 +56,10 @@
     ;Adds a steward
     (define/public (add-device name place serial-port communication-address)
       'dummy)
+    
+    ;Returns a list with all the rooms in the system
+    (define/public (get-all-rooms)
+      (send content-provider~ get-rooms))
 
     
     ;returns the steward which has the device 

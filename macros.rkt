@@ -2,9 +2,9 @@
 
 ;---------------------------------------------------------------------
 ;|
-;|    Content-provider.rkt 
+;|    macros.rkt 
 ;|    Arno De Witte - Programmeerproject 2
-;|    Provides content from the database
+;|    Provides some macros
 ;|
 ;---------------------------------------------------------------------
 

@@ -2,9 +2,9 @@
 
 ;---------------------------------------------------------------------
 ;|
-;|    Content-provider.rkt 
+;|    Device.rkt 
 ;|    Arno De Witte - Programmeerproject 2
-;|    Provides content from the database
+;|    Abstraction and simulation of the physical devices and sensors
 ;|
 ;---------------------------------------------------------------------
 

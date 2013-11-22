@@ -8,7 +8,8 @@
 ;|
 ;---------------------------------------------------------------------
 
-(require "macros.rkt")
+(require "macros.rkt"
+         "parser.rkt")
 (provide steward%)
 
 (define steward%
@@ -33,7 +34,7 @@
     
     (super-new)
     
-
+    
     ;returns the device for the given id
     ;filter:  http://docs.racket-lang.org/reference/pairs.html#%28def._%28%28lib._racket%2Fprivate%2Flist..rkt%29._filter%29%29
     (define/private (get-device device-id)
@@ -62,15 +63,19 @@
     (define/public (get-data-from-devices device-symbol message)
       (let* ([device (get-device device-symbol)]
              [device-output-port (send device get-output-port)]
-             [device-input-port (send device get-input-port)])
+             [device-input-port (send device get-input-port)]
+             [parser (new parser%)])
         ;write the message to the output port
         (write message device-output-port)
         ;read the message
-        (read device-input-port)))
+        (send parser parse-message (read device-input-port))))
     
     ;returns the status
     (define/public (get-device-status device-id)
-      (get-data-from-devices device-id (send (get-device device-id) get-status-message)))
+      (car ;Take the first element of the list because the status should only be 1 generic-data object
+       (get-data-from-devices
+        device-id 
+        (send (get-device device-id) get-status-message))))
     
     ;defines if this steward is already in the database
     (define/public (is-already-stored?)
