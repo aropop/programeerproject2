@@ -11,7 +11,8 @@
 
 (provide generic-data%
          temperature-data%
-         response-message%)
+         response-message%
+         dated-data%)
 (define generic-data%
   (class object%
     (super-new)
@@ -100,6 +101,38 @@
           'temp-fahrenheit)) 
     )
   )
+
+;has an extra date field and procedures to extract days and atc
+;the date string has to be of the form "YYYY-MM-DD HH:MM:SS"
+(define dated-data%
+  (class generic-data%
+    (init-field 
+     (date ""))
+    (super-new)
+    
+    (define/public (get-seconds)
+      (substring date 17))
+    
+    (define/public (get-minutes)
+      (substring date 14 16))
+    
+    (define/public (get-hours)
+      (substring date 11 13))
+    
+    (define/public (get-days)
+      (substring date 8 10))
+    
+    (define/public (get-month)
+      (substring date 5 7))
+    
+    (define/public (get-year)
+      (substring date 0 4))
+    
+    
+    )
+  )
+     
+     
   
 
     
