@@ -2,9 +2,9 @@
 
 ;---------------------------------------------------------------------
 ;|
-;|    Content-provider.rkt 
+;|    Steward.rkt 
 ;|    Arno De Witte - Programmeerproject 2
-;|    Provides content from the database
+;|    Represents a steward in the system
 ;|
 ;---------------------------------------------------------------------
 

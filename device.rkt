@@ -184,7 +184,7 @@
     (define/private (get-temp-datum)
       (let ((t (get-temperature))
             (c-or-f (send temperature~ which-unit)))
-      `(ACK (TEMP ,t) (UNIT ,c-or-f))))
+      `(ACK (UNIT ,c-or-f) (TEMP ,t)))) ;Putting it last fixes the temperature
     
     
     (define/override (handle-message)
