@@ -16,7 +16,8 @@
          "macros.rkt"
          "database-manager.rkt"
          "parser.rkt"
-         "generic-data.rkt")
+         "generic-data.rkt"
+         "settings.rkt")
 (provide master%)
 (define master%
   (class object%
@@ -27,7 +28,12 @@
       ;procedure init initialises these objects to prevent 2 database connections
       [content-provider~ 'uninitialised] 
       [content-storer~ 'uninitialised]
+      ;threads responsible for collecting data and saving the state of the system
       [data-thread~ 'uninitialised]
+      [save-thread~ 'uninitialised]
+      
+      [last-saved~ (current-milliseconds)]
+      
       )
     
     ;loads everything in place 
@@ -40,15 +46,24 @@
                                    [content-provider content-provider~]
                                    [database-manager db-manager]))
         (set! stewards~ (send content-provider~ get-stewards this))
-        
+        ;set the data collectin thread
         (set! data-thread~ (thread (lambda () 
                                      (define x (current-milliseconds))
                                      (let loop ()
-                                       (if (> (- (current-milliseconds) x) 10000)
+                                       (if (> (- (current-milliseconds) x) (get-field data-get-interval SETTINGS))
                                            (begin (collect-data)
                                                   (set! x (current-milliseconds))
                                                   (loop))
                                            (loop))))))
+        ;set the save thread
+        (set! save-thread~ (thread (lambda ()
+                                     (let loop ()
+                                       (if (> (- (current-milliseconds) last-saved~)
+                                              (get-field save-interval SETTINGS))
+                                           (begin (save)
+                                                  (loop))
+                                           (loop))))))
+        
         
         )
       )
@@ -67,9 +82,9 @@
     (define/public (get-stewards)
       stewards~)
     
-    ;Adds a steward
+    ;Adds a device
     (define/public (add-device type name place serial-port communication-address)
-      (define steward 'none-found)
+      (define steward 'none-found) ;steward where the device should be added
       (define create-device (lambda (type name serial-number com-adr) 
                               (cond [(eq? type 'switch) 
                                      (new switch%
@@ -77,23 +92,29 @@
                                           [communication-address~ com-adr]
                                           [name~ name]
                                           [serial-number~ serial-number])]
+                                 
                                     [(eq? type 'thermometer)
                                      (new thermometer%
                                           [place~ place]
                                           [communication-address~ com-adr]
                                           [name~ name]
                                           [serial-number~ serial-number])]
-                                    
+                                    ;new types of devices should be added here
                                     [else
                                      (error "Cannot create device from type " type)])))
+      ;Search the device for a certain room
       (map (lambda (s)
              (if (equal? (get-field place~ s) place)
                  (set! steward s)
                  'niets))
            (get-stewards))
+      ;Error if there is no steward in that room
       (if (eq? steward 'none-found)
           (error "No steward for supplied room")
-          (send steward add-device (create-device (string->symbol type) name serial-port communication-address))))
+          ;add the device to the steward
+          (send steward add-device (create-device (string->symbol type) name serial-port communication-address)))
+      ;save the current-state 
+      (save))
     
     
     ;Returns a list with all the rooms in the system
@@ -117,9 +138,15 @@
       )
     ;saves 
     (define/private (save)
+      ;do save
       (map (lambda (stew)
              (send content-storer~ store stew))
            stewards~)
+      ;debugging
+      (display "Saved")
+      (newline)
+      ;set the last save time
+      (set! last-saved~ (current-milliseconds))
       )
     
     (define/private (collect-data)

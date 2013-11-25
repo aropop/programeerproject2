@@ -91,7 +91,7 @@
                                             (symbol->string type) "', "
                                             "serial_number='" (number->string ser-nbr) "', "
                                             "communication_adress='" com-adr "', "
-                                            "name='" name "', "
+                                            "name='" name "' "
                                             "WHERE device_id="
                                             (number->string device-id))])
                  (send database-manager~ execute/no-return query))

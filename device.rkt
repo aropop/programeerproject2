@@ -113,7 +113,7 @@
     (define accepted-states '(ON OFF))
     
     (define/public (get-state)
-      (list-ref (random 1) accepted-states)) ;this is for simulation 
+      (list-ref accepted-states (random 2))) ;this is for simulation 
     
     (define/override (get-device-type)
       'switch)
@@ -122,7 +122,7 @@
       '(GET POW))
     
     (define/private (get-state-datum)
-      `(ACK (POW ,state~)))
+      `(ACK (POW ,(get-state))))
     
     (define/public (set-state! new-state)
       (if (not (memq new-state accepted-states))
@@ -164,7 +164,7 @@
     (super-new)
     
     (field 
-     [temperature~ (new temperature-data% [value 32])]
+     [temperature~ (new temperature-data% [value 32] [device-id -1])]
      )
     
     (inherit-field current-message~ answer~  name~ communication-address~ serial-number~)
@@ -172,6 +172,7 @@
    
     
     (define/public (get-temperature)
+      (send temperature~ set-value! (+ (random 11) 15))
       (send temperature~ get-value))
     
     (define/override (get-device-type)

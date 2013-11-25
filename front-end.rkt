@@ -81,7 +81,7 @@
                   [name (extract-binding/single 'devicenameinput bindings)]
                   [place (extract-binding/single 'deviceplaceinput bindings)]
                   [com-addr (extract-binding/single 'devicecommunicationaddressinput bindings)]
-                  [ser-num (extract-binding/single 'deviceserialnumberinput bindings)])
+                  [ser-num (string->number (extract-binding/single 'deviceserialnumberinput bindings))])
              (send master~ add-device  type name place ser-num com-addr)
              (get-inside-main-loop "devices" head heading (string-append "Succesfully added device '" name "'") inside-main))
            ]
