@@ -16,7 +16,7 @@
     
     ;Parses a message from a device
     ;returns a list of generic-data-types
-    (define/public (parse-message x-expression)
+    (define/public (parse-message x-expression device-id)
       (let ([ack-nack (car x-expression)])
         (if (eq? ack-nack 'NACK)
             (new generic-data%
@@ -35,14 +35,16 @@
                            (set! 
                             data-type
                             (new temperature-data%
-                                 [value value]))]
+                                 [value value]
+                                 [device-id device-id]))]
                           ;other data types should come here
                           [else ;else we put it in a generic data type
                            (set! 
                             data-type
-                            (new generic-data%
+                            (new response-message%
                                  [name type]
-                                 [value value]))])
+                                 [value value]
+                                 [device-id device-id]))])
                     (loop (cons data-type
                                 result)
                           (cdr remaining-answers))))))))
@@ -58,11 +60,13 @@
                         (unparse-generic-data x))
                       list-of-generic-data-types)))
     
+    
     ;Makes a put X-expression
     (define/public (unparse-put list-of-generic-data-types)
       (cons 'PUT (map (lambda (x) 
                         (unparse-generic-data x))
                       list-of-generic-data-types)))
+    
     
     
     )

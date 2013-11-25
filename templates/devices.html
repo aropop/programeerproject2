@@ -8,10 +8,14 @@ document.addDeviceForm.deviceCommunicationAddressInput.value = document.getEleme
 document.addDeviceForm.devicePlaceInput.value = document.getElementById("devicePlace").value;
 document.addDeviceForm.deviceSerialNumberInput.value = document.getElementById("deviceSerialNumber").value;
 }
-function addInput(){
-      document.getElementById("roomTd").innerHTML = "Enter new room name:<br/><input id=\"devicePlace\" type=text />";
-}
+
 </script>
+<!-- Succes or fail messages -->
+@in[m message]{
+<p id="message">@|m|</p>
+}
+
+
 <p id="description">Devices in the system</p>
 <table>
 <tr>
@@ -44,15 +48,20 @@ we make a small hidden form and on submit make all the values of the hidden inpu
 equal to those in the visible ones -->
 <td>Add</td>
 <td><input type="text" id="deviceName"/></td>
-<td><input type="text" id="deviceType" /></td>
+<td>
+<select id="deviceType" >
+@in[d supported-device-types]{
+<option name="@|d|">@|d|</option>
+}
+</select>
+</td>
 <td id="roomTd"> 
 <!-- the inputo of this table div will be changed when the user selects add new
  room -->
-<select id="devicePlace" onchange="addInput()">
+<select id="devicePlace">
 @in[r rooms]{
 <option name="@|r|">@|r|</option>
 }
-<option name="addNew">Add a new room</option>
 </select></td>
 <td><input type="text" id="deviceSerialNumber" /></td>
 <td><input type="text" id="deviceCommunicationAddress" /></td>

@@ -12,8 +12,8 @@
 (require "macros.rkt"
          "generic-data.rkt"
          "settings.rkt")
-(provide switch% thermometer%)
-(define supported-device-types '(Switch Thermometer))
+(provide switch% thermometer% supported-device-types)
+(define supported-device-types '(switch thermometer))
 (define device%
   (class object%
     (super-new)
@@ -113,7 +113,7 @@
     (define accepted-states '(ON OFF))
     
     (define/public (get-state)
-      state~)
+      (list-ref (random 1) accepted-states)) ;this is for simulation 
     
     (define/override (get-device-type)
       'switch)

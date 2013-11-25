@@ -30,13 +30,18 @@
       (let* ([type (send something get-type)]
              [is-type? (lambda (submitted-type)
                          (eq? type submitted-type))])
-        (cond [(is-type? 'temp)
+        (cond [(or 
+                (is-type? 'temp-celcius)
+                (is-type? 'temp-fahrenheit))
+               (store-data something)]
+              [(is-type? 'response-message)
                (store-data something)]
               [(is-type? 'device)
                (store-device something)]
               [(is-type? 'steward)
                (store-steward something)]
               
+              ;here should come all types of objects you want to store
               [else (error "Content-storer: Cannot store this" something)]
               )
         )
@@ -63,13 +68,15 @@
       )
     
     ;stores a generic data object
-    (define/private (store-data generic-data-object)
+    (define/private (store-data response-message-object)
       (let ([query (string-append
-                    "INSERT INTO Data (type, value) VALUES ('" 
-                    (send generic-data-object get-type)
+                    "INSERT INTO Data (type, value, device_id) VALUES ('" 
+                    (symbol->string (get-field name~ response-message-object))
                     "', '"
-                    (send generic-data-object get-value-as-string)
-                    "')")])
+                    (send response-message-object get-value-as-string)
+                    "', "
+                    (number->string (get-field device-id~ response-message-object))
+                    ")")])
         (send database-manager~ execute/no-return query)))
     
     ;stores a device, when it is not already stored it expects an steward-id

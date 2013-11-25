@@ -10,7 +10,8 @@
 
 
 (provide generic-data%
-         temperature-data%)
+         temperature-data%
+         response-message%)
 (define generic-data%
   (class object%
     (super-new)
@@ -27,25 +28,51 @@
     ;for queries
     (define/public (get-value-as-string)
       (cond [(number? value~) (number->string value~)]
+            [(symbol? value~) (symbol->string value~)]
             [(string? value~) value~]
             [else (error "Generic data cannot convert this to string" value~)]))
     
     (define/public (get-type)
-      (get-name))
+      'generic-data)
     
     (define/public (set-value! val)
       (set! value~ val))
     )
   )
 
-(define temperature-data%
+
+;Represents the return of a call
+;Adds just the device id for storing 
+(define response-message%
   (class generic-data%
+    (inherit-field value~ name~)
+    (init device-id)
+    (field [device-id~ device-id])
+    (super-new)
+    
+    (inherit get-value-as-string get-name set-value! get-value)
+    
+    (define/public (get-device-id)
+      device-id~)
+    
+    (define/public (set-device-id id)
+      (set! device-id~ id))
+    
+    (define/override (get-type)
+      'response-message)
+    
+    )
+  )
+;represents temperature
+(define temperature-data%
+  (class response-message%
     
     (init value)
     
     (define  celcius~ #t)
+   
     
-    (inherit/super set-value! get-value)
+    (inherit set-value! get-value get-value-as-string get-name)
     
     (super-new [name 'temp] [value value])
     
@@ -67,12 +94,14 @@
           'celcius
           'fahrenheit))
     
-    (define (get-type)
+    (define/override (get-type)
       (if celcius~
           'temp-celcius
-          'temp-fahrenheit))
-    (override get-type)
-    
-    
+          'temp-fahrenheit)) 
     )
   )
+  
+
+    
+    
+    

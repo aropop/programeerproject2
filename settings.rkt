@@ -18,6 +18,7 @@
       [unknown-message '(Unknown Message)]
       [author "Arno De Witte"]
       [title "Control Your House"]
+      [data-get-interval 60000] ; 1000 = 1 second 
       )
     (super-new)
     )

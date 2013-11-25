@@ -64,11 +64,25 @@
       (let* ([device (get-device device-symbol)]
              [device-output-port (send device get-output-port)]
              [device-input-port (send device get-input-port)]
-             [parser (new parser%)])
+             [parser (new parser%)]
+             [p-message (if (pair? message) ;test if the type is correct, if not unparse it
+                            message
+                            (send parser unparse-generic-data message))])
+        
         ;write the message to the output port
-        (write message device-output-port)
+        (write p-message device-output-port)
         ;read the message
-        (send parser parse-message (read device-input-port))))
+        (send parser parse-message (read device-input-port) device-symbol)))
+    
+    ;sends the same message to all devices
+    ;returns a list of a list of parsed answers
+    (define/public (message-all-devices message)
+      (map
+       (lambda (device)
+         (get-data-from-devices
+          (get-field device-id~ device)
+          message))
+       devices~))
     
     ;returns the status
     (define/public (get-device-status device-id)
@@ -76,6 +90,8 @@
        (get-data-from-devices
         device-id 
         (send (get-device device-id) get-status-message))))
+    
+    
     
     ;defines if this steward is already in the database
     (define/public (is-already-stored?)
@@ -104,6 +120,10 @@
         (send device get-output-port)
         )
       )
+    
+    ;Adds a device
+    (define/public (add-device device)
+      (set! devices~ (cons device devices~)))
     
     
     )      
