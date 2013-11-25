@@ -112,6 +112,9 @@
                                             (number->string steward-id)
                                             "')")])
                  (send database-manager~ execute/no-return query)
+                 (set-field! device-id~ 
+                             device 
+                             (send database-manager~ last-inserted-id))
                  )]
               )
         )
