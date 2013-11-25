@@ -86,9 +86,24 @@
              (get-inside-main-loop "devices" head heading (string-append "Succesfully added device '" name "'") inside-main))
            ]
           
+          [(equal? page "data")
+           (let* ([room_tuple (map 
+                               (lambda (steward)
+                                 (cons 
+                                  (get-field steward-id~ steward)
+                                  (get-field place~ steward)))
+                               (send master~ get-stewards))]
+                  [amount_data (send master~ get-facts 'amount-data)]
+                  [number_stewards (length room_tuple)]
+                  [number_devices (send master~ get-facts 'amount-devices)]
+                  [last_stored_data (send master~ get-facts 'last-stored-data)]
+                  )
+             (set! inside-main (include-template "templates/data-start.html")))]
+                  
+          
           ;standard page
           [else
-           (set! inside-main "Welkom...")
+           (set! inside-main "Welkom<br>Features to add: <ul><li>Device delete</li><li>graphs</li></ul>")
            ]
           )
         (let* ((main (include-template "templates/main.html"))

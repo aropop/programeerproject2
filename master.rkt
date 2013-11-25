@@ -136,6 +136,7 @@
       (save)
       (kill-thread data-thread~)
       )
+    
     ;saves 
     (define/private (save)
       ;do save
@@ -149,6 +150,27 @@
       (set! last-saved~ (current-milliseconds))
       )
     
+    ;Procedure that returns facts about the system
+    (define/public (get-facts fact)
+      (cond ;dispatch
+        [(eq? fact 'amount-data)
+         (send content-provider~ get-amount-of-data)]
+        [(eq? fact 'last-stored-data)
+         (send content-provider~ last-data-stored-timestamp)]
+        [(eq? fact 'amount-devices)
+         (accumulate
+          (lambda (steward numbr)
+            (+ (length
+                (send steward get-device-list))
+               numbr))
+          0
+          (get-stewards))]
+        [(eq? fact 'amount-stewards)
+         (length (get-stewards))]
+        ))
+           
+    
+    ;Procedure that will be executed to collect data
     (define/private (collect-data)
       (define pars (new parser%))
       (let ([message (new generic-data% [name 'GET] [value 'ALL])])

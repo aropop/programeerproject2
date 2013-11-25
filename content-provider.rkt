@@ -24,12 +24,7 @@
     (define*
       [db-manager~ database-manager])
     
-    (define/public (get-stored-data which room)
-      (cond ((eq? which 'avg-temp)
-             (send db-manager~ execute/return (build-select-query which room)))
-            (else
-             (error "Unknown data stored, couldn't get"))))
-    
+    ;returns the stored stewards as steward objects
     (define/public (get-stewards master)
       (let* ([query "SELECT steward_id, room_name FROM Steward"]
              [steward-data (send db-manager~ execute/return query)]
@@ -56,6 +51,7 @@
       )
     
     
+    ;returns the devices as device objects
     (define/private (get-devices steward-id place)
       (let* (;prepare the query
              [query (string-append "SELECT device_id, type , name, serial_number, communication_adress FROM Device WHERE steward_id=" (number->string steward-id))]
@@ -105,14 +101,21 @@
             [result (send db-manager~ execute/return query)])
         (send result get-colum 0)))
     
+    ;returns the number of elements in the data table
+    (define/public (get-amount-of-data)
+      (let* ([query "SELECT COUNT(*) FROM Data"]
+             [result (send db-manager~ execute/return query)]
+             )
+        (send result get-next-row)
+        (send result get-current-row-colum 0)))
     
-    (define/private (build-select-query which room)
-      (cond [(eq? which 'avg-temp)
-             (string-append "SELECT AVG(temp) FROM sensor-data WHERE room='" room "'")]
-            
-            [else
-             (error "Unknown data stored, couldn't get")]))
-    
+    ;Returns the lastest timestamp of the data
+    (define/public (last-data-stored-timestamp)
+      (let* ([query "SELECT MAX(date) FROM Data"]
+             [result (send db-manager~ execute/return query)])
+        (send result get-next-row)
+        (send result get-current-row-colum 0)))
+
     
     
     )

@@ -1,0 +1,23 @@
+<!-- Data starting page template -->
+<h4>Data collected by the system</h4>
+<p>On this page you can see the data collected by the system. This system will 
+automatically get the state of all your devices that are connected to the system
+and store it in a database on your master computer.<br />
+You can choose a room below to see statistics of a single room or device.</p>
+<ul>
+@in[r room_tuple]{
+<li>
+<a href="?page=data_single_room&steward=@(car r)">@(cdr r)</a>
+</li>
+}
+</ul>
+
+<p>
+<a href="?page=data_whole_system">Or you can click here to see the statistics of the whole system</a>
+</p>
+<p>
+Amount of devices: @number_devices <br />
+Amount of stewards: @number_stewards <br />
+Amount of data objects stored: @amount_data <br />
+Last stored data on: @last_stored_data <br />
+</p>
