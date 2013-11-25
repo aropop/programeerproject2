@@ -9,7 +9,8 @@
 ;---------------------------------------------------------------------
 
 
-(require "macros.rkt")
+(require "macros.rkt"
+         (only-in db sql-null?))
 
 (provide db-table-data%
          )
@@ -37,7 +38,10 @@
             ret)))
     ;returns the current row
     (define/public (get-current-row-colum num)
-      (vector-ref current-row~ num))
+      (define r  (vector-ref current-row~ num))
+      (if (sql-null? r) ;prevent that sql-null data types leaves a db object
+          0
+          r))
     
     ;maps a certain proc on each row
     (define/private (data-map proc)
@@ -55,12 +59,17 @@
             (set! amount-of-rows~ (length data~))
             amount-of-rows~)
           amount-of-rows~))
+    
     ;returns a colum of the next row
     (define/public (get-next-row-colum colum-id)
       (let ([row (get-next-row)])
-        (if (> colum-id (vector-length row))
-            (error "colum id out of bounds")
-            (vector-ref colum-id row))))
+        (cond [(> colum-id (vector-length row))
+               (error "colum id out of bounds")]
+              [(sql-null? (vector-ref colum-id row))
+               0]
+              [else
+               (vector-ref colum-id row)])))
+    
     ;returns whether this data type is at its end
     (define/public (at-end?)
       (or

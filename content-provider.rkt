@@ -101,6 +101,9 @@
             [result (send db-manager~ execute/return query)])
         (send result get-colum 0)))
     
+    (define/public (get-data type device-id time)
+      'dummy)
+    
     ;returns the number of elements in the data table
     (define/public (get-amount-of-data)
       (let* ([query "SELECT COUNT(*) FROM Data"]

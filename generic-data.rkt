@@ -4,7 +4,7 @@
 ;|
 ;|    Generic-Data.rkt 
 ;|    Arno De Witte - Programmeerproject 2
-;|    Abstraction for diffrenct forms of data
+;|    Abstraction for diffrent forms of data
 ;|
 ;---------------------------------------------------------------------
 
@@ -71,7 +71,7 @@
     (init value)
     
     (define  celcius~ #t)
-   
+    
     
     (inherit set-value! get-value get-value-as-string get-name)
     
@@ -131,10 +131,9 @@
     
     )
   )
-     
-     
-  
 
-    
-    
-    
+
+
+
+
+

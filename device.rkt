@@ -17,7 +17,7 @@
 (define device%
   (class object%
     (super-new)
-   
+    
     
     (init-field [place~ 'no-place]
                 [device-id~ -1]
@@ -169,7 +169,7 @@
     
     (inherit-field current-message~ answer~  name~ communication-address~ serial-number~)
     (inherit get-unknown)
-   
+    
     
     (define/public (get-temperature)
       (send temperature~ set-value! (+ (random 11) 15))
@@ -184,7 +184,7 @@
     (define/private (get-temp-datum)
       (let ((t (get-temperature))
             (c-or-f (send temperature~ which-unit)))
-      `(ACK (UNIT ,c-or-f) (TEMP ,t)))) ;Putting it last fixes the temperature
+        `(ACK (UNIT ,c-or-f) (TEMP ,t)))) ;Putting it last fixes the temperature
     
     
     (define/override (handle-message)

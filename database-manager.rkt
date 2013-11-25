@@ -25,24 +25,24 @@
       [last-query~ 'none]
       [install-query~ 
        (list 
-"CREATE TABLE Room (
+        "CREATE TABLE Room (
 name VARCHAR(30) PRIMARY KEY
 );"
-
-"CREATE TABLE Data (
+        
+        "CREATE TABLE Data (
 data_id INTEGER PRIMARY KEY ASC AUTOINCREMENT,
-date TEXT DEFAULT CURRENT_TIMESTAMP,
+date DATETIME DEFAULT CURRENT_TIMESTAMP,
 type VARCHAR(20) NOT NULL,
 value TEXT NOT NULL,
 device_id INT REFERENCES Device(device_id) ON UPDATE CASCADE ON DELETE SET NULL
 );"
-
-"CREATE TABLE Steward (
+        
+        "CREATE TABLE Steward (
 steward_id INTEGER PRIMARY KEY ASC AUTOINCREMENT,
 room_name VARCHAR(30) REFERENCES Room(name) ON UPDATE CASCADE ON DELETE SET NULL
 );"
-
-"CREATE TABLE Device (
+        
+        "CREATE TABLE Device (
 device_id INTEGER PRIMARY KEY ASC AUTOINCREMENT,
 type VARCHAR(20) NOT NULL,
 name VARCHAR(35) NOT NULL,

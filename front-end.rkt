@@ -50,14 +50,14 @@
     (define (dispatcher requests . message)
       (display (request-bindings requests)) (newline)
       (let get-inside-main-loop
-          (;handle the "static" elements of the site
-           [page (extract-page (request-bindings requests))]
-           [head (render-head-template)]
-           [heading (render-heading-template)]
-           [message message]
-           ;in here the actual content should be stored
-           [inside-main 'temp]
-           )
+        (;handle the "static" elements of the site
+         [page (extract-page (request-bindings requests))]
+         [head (render-head-template)]
+         [heading (render-heading-template)]
+         [message message]
+         ;in here the actual content should be stored
+         [inside-main 'temp]
+         )
         (cond
           ;stewards page
           [(equal? page "stewards")
@@ -70,9 +70,9 @@
            (let* ([stewards (send master~ get-stewards)]
                   [rooms (send master~ get-all-rooms)]
                   [devices 
-                            (map (lambda (steward)
-                                   (cons steward (send steward get-device-list)))
-                                 stewards)])
+                   (map (lambda (steward)
+                          (cons steward (send steward get-device-list)))
+                        stewards)])
              (set! inside-main (include-template "templates/devices.html")))]
           ;do the add device action
           [(equal? page "handleAddDevice")
@@ -99,7 +99,7 @@
                   [last_stored_data (send master~ get-facts 'last-stored-data)]
                   )
              (set! inside-main (include-template "templates/data-start.html")))]
-                  
+          
           
           ;standard page
           [else
@@ -108,11 +108,11 @@
           )
         (let* ((main (include-template "templates/main.html"))
                (body (include-template "templates/body.html")))
-        (response/full
-         200 #"Okay"
-         (current-seconds) TEXT/HTML-MIME-TYPE
-         empty
-         (list (string->bytes/utf-8 (include-template "templates/home.html")))))
+          (response/full
+           200 #"Okay"
+           (current-seconds) TEXT/HTML-MIME-TYPE
+           empty
+           (list (string->bytes/utf-8 (include-template "templates/home.html")))))
         )
       )
     
@@ -147,10 +147,10 @@
           loop-over-bindings
         ([remaining bindings])
         (cond [(empty? remaining)
-            home-page]
-            [(eq? (caar remaining) 'page)
-             (cdar remaining)]
-            [else (loop-over-bindings (cdr remaining))])))
+               home-page]
+              [(eq? (caar remaining) 'page)
+               (cdar remaining)]
+              [else (loop-over-bindings (cdr remaining))])))
     
     (define/override (start)
       (serve/servlet dispatcher
