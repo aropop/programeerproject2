@@ -11,7 +11,8 @@
 (require "database-manager.rkt"
          "steward.rkt"
          "device.rkt"
-         "macros.rkt")
+         "macros.rkt"
+         "generic-data.rkt")
 
 (#%provide content-provider%)
 
@@ -101,8 +102,22 @@
             [result (send db-manager~ execute/return query)])
         (send result get-colum 0)))
     
-    (define/public (get-data type device-id time)
-      'dummy)
+    ;Returns all data in the dated data type
+    (define/public (get-all-data)
+      (let* ([query "SELECT (date, type, name) FROM Data"]
+             [result (send db-manager~ execute/return query)])
+        (let lp ([list-of-dated-data '()])
+          (send result get-next-row)
+        (if (send result at-end?)
+            list-of-dated-data
+            (lp (cons 
+                 (new 
+                  dated-data%
+                  [date (send result get-current-row-colum 0)]
+                  [type (send result get-current-row-colum 1)]
+                  [value (send result get-current-row-colom 2)])
+                 list-of-dated-data))))))
+    
     
     ;returns the number of elements in the data table
     (define/public (get-amount-of-data)
