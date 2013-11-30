@@ -33,6 +33,27 @@
             [(string? value~) value~]
             [else (error "Generic data cannot convert this to string" value~)]))
     
+    (define/public (get-value-as-number)
+      (cond [(number? value~) value~]
+            [(symbol? value~) (symbol->number value~)]
+            [(string? value~) (my-string->number value~)]
+            [else (error "Cannot put " value~ " to a number type")]))
+    
+    (define/private (symbol->number val)
+      (cond [(eq? 'ON) 1]
+            [(eq? 'OFF) 0]
+            [(eq? 'celcius) 1]
+            [(eq? 'fahrenheit) 0]
+            [else 1]))
+    
+    (define/private (my-string->number val)
+      (cond [(string->number val) (string->number val)]
+            [(string=? "ON" val) 1]
+            [(string=? "OFF" val) 0]
+            [(string=? "celcius" val) 1]
+            [(string=? "fahrenheit" val) 0]
+            [else (error "Cannot put " value~ " to a number type")]))
+    
     (define/public (get-type)
       'generic-data)
     
@@ -109,6 +130,7 @@
     (init-field 
      (date ""))
     (super-new)
+
     
     (define/public (get-seconds)
       (substring date 17))

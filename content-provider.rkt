@@ -104,7 +104,7 @@
     
     ;Returns all data in the dated data type
     (define/public (get-all-data)
-      (let* ([query "SELECT (date, type, name) FROM Data"]
+      (let* ([query "SELECT date, type, value FROM Data"]
              [result (send db-manager~ execute/return query)])
         (let lp ([list-of-dated-data '()])
           (send result get-next-row)
@@ -114,8 +114,8 @@
                  (new 
                   dated-data%
                   [date (send result get-current-row-colum 0)]
-                  [type (send result get-current-row-colum 1)]
-                  [value (send result get-current-row-colom 2)])
+                  [name (send result get-current-row-colum 1)]
+                  [value (send result get-current-row-colum 2)])
                  list-of-dated-data))))))
     
     

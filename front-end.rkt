@@ -12,6 +12,7 @@
          web-server/http/response-structs
          web-server/http/bindings
          "settings.rkt"
+         "parser.rkt"
          (only-in "device.rkt" supported-device-types))
 
 (provide html-front-end%)
@@ -100,10 +101,21 @@
                   )
              (set! inside-main (include-template "templates/data-start.html")))]
           
+          [(equal? page "data_whole_system")
+           (let* ([unparsed-data (send master~ get-data 'all)]
+                  [current-time-diff (string->symbol (extract-binding/single 'time_diff (request-bindings requests)))]
+                  [json-data (send (new parser%) unparse-to-json unparsed-data current-time-diff)]                  
+                  [time-diffs '((minute . "Minutes") (hour . "Hours") (day . "Days") (month . "Months") (year . "Years"))]
+                  [current-page page]
+                  [jquery "/js/jquery.min.js"]
+                  [flot-js "/js/jquery.flot.min.js"]
+                  )
+             (set! inside-main (include-template "templates/graph.html")))]
+          
           
           ;standard page
           [else
-           (set! inside-main "Welkom<br>Features to add: <ul><li>Device delete</li><li>graphs</li></ul>")
+           (set! inside-main "Welkom<br>Features to add: <ul><li>Device delete</li><li>graphs</li><li>Better interface</li></ul>")
            ]
           )
         (let* ((main (include-template "templates/main.html"))
@@ -154,7 +166,8 @@
     
     (define/override (start)
       (serve/servlet dispatcher
-                     #:extra-files-paths (list (current-directory)))
+                     #:extra-files-paths (list (current-directory)
+                                              ))
       )
     
     

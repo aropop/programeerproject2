@@ -64,14 +64,9 @@
                                                   (loop))
                                            (loop))))))
         
-        
         )
       )
     
-    ;gets data out of the database
-    (define/public (get-stored-data which)
-      (send content-provider~ get-stored-data which)
-      )
     
     ;sends the message directely to the device 
     (define/public (get-direct-data device-id message)
@@ -191,6 +186,14 @@
         (newline)
         )
       )
+    
+    ;procedure that dispatches the calls for data from a front end
+    (define/public (get-data which . options)
+      (cond
+        [(eq? which 'all)
+         (send content-provider~ get-all-data)]
+        [else
+         (error "Cannot get-data for which is: " which)]))
     
     
     )

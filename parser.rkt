@@ -67,7 +67,83 @@
                         (unparse-generic-data x))
                       list-of-generic-data-types)))
     
-    
+    ;unparses list of dated objects to json expressions
+    (define/public (unparse-to-json list-of-dated-objects time-diff) ;time-diff is a symbol day, month, year
+      (define (add-string-loop hash-table current-object get-proc) ;adds to the has the data of the current data object
+        (let ([cur-str (if (hash-has-key? hash-table (send current-object get-name))
+                           (hash-ref hash-table (send current-object get-name))
+                           (let ([init-str (string-append 
+                                            ; "\""
+                                            ;(send current-object get-name)
+                                            ;"\":"
+                                            "{\n label:\""                                         
+                                            (send current-object get-name)
+                                            "\",\n data:[")])
+                             (hash-set! hash-table ;initialise the string
+                                        (send current-object get-name)
+                                        init-str)
+                             init-str))
+                       ]
+              [str (string-append "[" (get-proc current-object) ", "
+                                  (number->string
+                                   (send current-object get-value-as-number))
+                                  "],")]) ;the comma at the end will cause a comma "too much" at the end
+          
+          (hash-set! hash-table (send  current-object get-name) 
+                     (string-append
+                      cur-str ;longest string first for performance
+                      str))))
+      (define built-hash-table (let 
+                                   loop
+                                 ([json-hash-table (make-hash)]
+                                  [remaining-dated-objects list-of-dated-objects])
+                                 ;cond to test if empty
+                                 (cond 
+                                   [(empty? remaining-dated-objects)
+                                    json-hash-table]
+                                   [else
+                                    ;make new conditional to determine which proc to use for unparsing
+                                    (let ([proc (lambda (obj) ;default is a day
+                                                  (send obj get-days))])
+                                      (cond
+                                        [(eq? time-diff 'year)
+                                         (set! proc (lambda (obj)
+                                                      (send obj get-year)))]
+                                        [(eq? time-diff 'month)
+                                         (set! proc (lambda (obj)
+                                                      (send obj get-month)))
+                                         ]
+                                        [(eq? time-diff 'hour)
+                                         (set! proc (lambda (obj)
+                                                      (send obj get-hours)))]
+                                        [(eq? time-diff 'minute)
+                                         (set! proc (lambda (obj)
+                                                      (send obj get-minutes)))]
+                                        )
+                                      (add-string-loop json-hash-table 
+                                                       (car remaining-dated-objects) 
+                                                       proc)
+                                      (loop json-hash-table (cdr remaining-dated-objects))
+                                      
+                                      )])                                 
+                                 ))
+      (define return-string "")
+      ;we have to map to remove excess "," and add "]"
+      (hash-map
+       built-hash-table
+       (lambda (key string)
+         (let*
+             ([removed-komma-string 
+               (substring string 0 
+                          (- (string-length string) 1))]
+              [added-bracket (string-append removed-komma-string
+                                            "]\n},\n")])
+           (set! return-string (string-append return-string added-bracket))))
+       )
+      
+      ;now there's still one excess ","
+      (substring return-string 0 (- (string-length return-string) 2)) ; 2 because we have the newline which apperently counts as a character aswell
+      )
     
     )
   )
