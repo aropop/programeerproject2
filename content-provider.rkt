@@ -106,7 +106,20 @@
     (define/public (get-all-data)
       (let* ([query "SELECT date, type, value FROM Data"]
              [result (send db-manager~ execute/return query)])
-        (let lp ([list-of-dated-data '()])
+        (handle-data-result result)
+       ))
+    
+    ;Returns data for specific type
+    (define/public (get-data-for-type type)
+      (let* ([query (string-append 
+                     "SELECT date, type, value FROM Data WHERE type='" 
+                     (symbol->string type) "'")]
+             [result (send db-manager~ execute/return query)])
+        (handle-data-result result)))
+    
+    ;This procedure handles the conversion of db-result to list of dated-data-objects
+    (define/private (handle-data-result result)
+     (let lp ([list-of-dated-data '()])
           (send result get-next-row)
         (if (send result at-end?)
             list-of-dated-data
@@ -116,8 +129,7 @@
                   [date (send result get-current-row-colum 0)]
                   [name (send result get-current-row-colum 1)]
                   [value (send result get-current-row-colum 2)])
-                 list-of-dated-data))))))
-    
+                 list-of-dated-data)))))
     
     ;returns the number of elements in the data table
     (define/public (get-amount-of-data)

@@ -1,0 +1,84 @@
+% !TeX spellcheck = nl_NL
+\documentclass{article}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{listings}
+\title{Programmeerproject 2 Fase 1}
+\author{Arno De Witte \\Rolnummmer: 500504\\Email: \href{mailto:Arno.De.Witte@vub.ac.be}{Arno.De.Witte@vub.ac.be}\\
+Vrije Universiteit Brussel}
+\date{11 januari 2014}
+\begin{document}
+\maketitle
+\newpage
+\tableofcontents
+\newpage
+
+
+\section{Inleiding}
+Voor het programmeerproject van dit jaar is het de bedoeling een domotica systeem te maken binnen racket. Hiervoor zouden er verschillende apparaten (devices) zoals thermometers, switches, multimeters,... aangesloten worden binnen een bepaalde kamer. In deze kamer zou er een klein computertje (raspberry pi) met deze devices communiceren. Dit toestel speelt dan de rol van steward. Er zou dan ook nog een gewone computer de rol van master innemen. Deze stuurt dan heel het proces aan.\\
+Voor de eerste fase van het project moest heel deze structuur echter gesimuleerd worden. In de code van deze fase zal er dus een ook een stuk simulatie code bevinden. Ook werkt op dit moment enkel de basisfunctionaliteiten van het systeem. Het is dus nog een "work in progress". Er kunnen dus nog enkele bugs inzitten. Ook de interface werkt nog niet helemaal of ziet er nog niet af uit.\\
+
+\section{Features}
+\begin{itemize}
+\item Webinterface op basis van templates
+\begin{itemize}
+\item Overzicht van alle devices
+\item Overzicht van alle stewards
+\item Mogelijkheid stewards toe te voegen
+\item Bekijken van de opgeslagen data
+\end{itemize}
+\item Persistentie van alle onderdelen
+\item Ophalen van data in de achtergrond
+\item 2 verschillende gesimuleerde devices (thermometer en switch)
+\item Input en output poorten zonder tussen stappen
+\end{itemize}
+
+\section{Handleiding voor gebruikers}
+Om het systeem aan te zetten dien je de gedownloade code uit te pakken in een map. Vervolgens moet je het bestand "start.rkt" uitvoeren in een racket omgeving. Wanneer je dit doet zou er een browser venster moeten openen. Wanneer dit niet gebeurt kan je altijd zelf een browser venster openen en naar de volgende URL surfen (\href{http://localhost:8000/servlets/standalone.rkt}{http://localhost:8000/servlets/standalone.rkt}). Deze URL kan je ook gebruiken wanneer je bijvoorbeeld vanaf je tablet of smartphone naar het systeem wilt surfen.\\
+Je bevindt je nu op het startscherm van het systeem. Hier staat wat uitleg, huidige features en features die nog moeten worden toegevoegd. Vanaf hier kan je via het menu op stewards drukken. Hier krijg je een lijstje van alle stewards die in het systeem zitten. Je kan ook zien hoeveel devices er momenteel verbonden zijn aan deze steward.\\
+Wanneer je op devices drukt krijg je de lijst van alle devices in het systeem. Je kan er de status van bekijken, de locatie, technische informatie en de steward. Via dit scherm kan je ook devices toevoegen aan het systeem (de laatste rij van de tabel). \\
+Wanneer je op data drukt krijg je een overzicht van alle kamers (waar er zich een steward bevindt) waarop je kan drukken (deze feature is nog niet ge\"{i}mplementeerd). Onderaan vind je dan een link waarop je kan drukken en deze brengt je dan naar een pagina waar je een grafiek van data over heel het systeem terug vindt. Verder vind je op de data pagina nog een paar kleine stukjes info over de opgeslagen data in het systeem.\\
+
+\section{Handleiding voor ontwikkelaars}
+Het systeem in zijn huidige vorm is ontwikkeld aan de hand van het racket klasse systeem\footnote{$\href{http://docs.racket-lang.org/reference/mzlib_class.html?q=class&q=test}{http://docs.racket-lang.org/reference/mzlib_class.html?q=class\&q=test}$}. Ik verkies dit systeem omdat het abstractie biedt zonder daar zelf voor te moeten zorgen (dispatch functies etc.). Het biedt ook de mogelijkheid tot gemakkelijke inheritance.\\
+Hieronder vind je een klein overzicht van alle modules plus een beschrijving van wat ze doen.\\
+
+\begin{itemize}
+\item[Generic-Data] Een veralgemeend data object. Wordt uitgebreid door bijvoorbeeld een temperatuur object, response-message, dated-data. Heeft enkel specifieke accesoren en mutatoren.
+\item[Db-table-data] Een abstractie van de data die gereturned wordt uit queries. Heeft procedures om over de rijen te lopen en kolommen te selecteren.
+\item[Database-Manager] Dit object gaat de database installeren moest dit nog niet het geval zijn, als dit wel het geval is onderhoudt het de connectie en stuurt queries naar de database (SQLite).
+\item[Content-provider] Stelt queries op, geeft deze dan door aan de content-provider. Met de db-table-data stelt deze dan abstracte datatypes op zoals de stewards en de devices. Maar ook gewone data zoals opgeslagen temperaturen enzovoort.
+\item[Content-storer] Het omgekeerde van de content-provider. Neemt lijsten met abstracte datatypes en vormt deze dan om tot queries die worden doorgeven aan de database-manager (zonder return waardes).
+\item[Settings] Object zonder procedures. Bevat enkel fields met opties. Ik gebruik deze structuur omdat er al een get-field procedure in racket zit.
+\item[Parser] Parsed en unparsed x-expressies en json expressie naar generic-data types.
+\item[Device] In dit bestand bevindt zich de abstractie van een device. Deze wordt dan gespecifi\"{e}erd door een switch en een thermometer. Hierin wordt ook de input en output port aangemaakt. De communicatie naar de specifieke objecten gebeurt door handle-message dat wordt opgeroepen wanneer er uit de input port wordt gelezen.
+\item[Steward] Voorlopig gewoon een tussen element tussen de master en de devices. Stuurt meeste van de messages die hij krijgt door naar zijn devices.
+\item[Master] Centrum van heel het project. Wanneer ge\"{i}nitialiseerd bevat het al de stewards. Het behandeld de vragen van de front-end, bevat de data en save threads die voor persistentie zorgen.
+\item[Front-end] Dit is de web applicatie die je ziet wanneer je het systeem gebruikt.
+\end{itemize}
+
+Communicatie tussen de verschillende objecten gebeurt via de send procedure van racket. Behalve tussen de specifieke devices. Daar wordt de input en output port gebruikt om te communiceren. Dit gebeurt via x-expressies. Wanneer je iets vraagt van het device (bijvoorbeeld de status) gebruik je:
+\begin{lstlisting}
+(GET STATUS)
+\end{lstlisting}
+Wanneer je de staat van een device wilt aanpassen (bijvoorbeeld switch aanzetten) gebruik je:
+\begin{lstlisting}
+(PUT (STATE OFF))
+\end{lstlisting}
+Ook de antwoorden zijn x-expressies, wanneer er een geslaagde boodschap is overgebracht krijg je:
+\begin{lstlisting}
+(ACK (UNIT CELCIUS) (TEMP 23))
+\end{lstlisting}
+Bij verkeerde communicatie zal het device met volgende x-expressie antwoorden:
+\begin{lstlisting}
+(NACK (Unknown Message))
+\end{lstlisting}
+Verder heb je nog html templates in de template map. Meer info hierover kan vinden vinden op \href{http://docs.racket-lang.org/web-server/templates.html}{http://docs.racket-lang.org/web-server/templates.html}. Er wordt ook nog gebruikt gemaakt van de javascript module flot om grafieken te tekenen in html. Deze maakt op zijn beurt gebruikt van de gekende javascript uitbreiding jquery. De javascript (js) map bevat dus geen enkel stuk code die niet in racket kan geschreven worden.
+In de database map vind je nog het database bestand.\\
+
+
+
+
+ 
+
+\end{document}

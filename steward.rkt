@@ -15,6 +15,7 @@
 (define steward%
   (class object%
     
+    ;public
     (init master
           devices
           (is-already-stored #f))
@@ -26,7 +27,7 @@
      )
     
     
-    (define*
+    (define* ;private
       [devices~ devices]
       [master~ master]
       )
@@ -115,7 +116,7 @@
         )
       )
     
-    (define/public (get-ouput-port device-id)
+    (define/public (get-output-port device-id)
       (let ([device (get-device device-id)])
         (send device get-output-port)
         )

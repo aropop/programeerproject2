@@ -65,10 +65,10 @@
       (let ([row (get-next-row)])
         (cond [(> colum-id (vector-length row))
                (error "colum id out of bounds")]
-              [(sql-null? (vector-ref colum-id row))
+              [(sql-null? (vector-ref row colum-id))
                0]
               [else
-               (vector-ref colum-id row)])))
+               (vector-ref row colum-id)])))
     
     ;returns whether this data type is at its end
     (define/public (at-end?)

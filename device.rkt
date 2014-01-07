@@ -159,6 +159,7 @@
     )
   )
 
+;Simulation of a thermometer device
 (define thermometer%
   (class device%
     (super-new)
@@ -170,8 +171,8 @@
     (inherit-field current-message~ answer~  name~ communication-address~ serial-number~)
     (inherit get-unknown)
     
-    
-    (define/public (get-temperature)
+    ;Private function returns a random temp
+    (define/private (get-temperature) 
       (send temperature~ set-value! (+ (random 11) 15))
       (send temperature~ get-value))
     
@@ -180,13 +181,13 @@
     
     (define/override (get-status-message)
       '(GET TEMP))
-    
+    ;Returns the temp data
     (define/private (get-temp-datum)
       (let ((t (get-temperature))
             (c-or-f (send temperature~ which-unit)))
         `(ACK (UNIT ,c-or-f) (TEMP ,t)))) ;Putting it last fixes the temperature
     
-    
+    ;Handle messages from input port
     (define/override (handle-message)
       (let ([type (car current-message~)])
         (cond 
