@@ -134,15 +134,19 @@
        (lambda (key string)
          (let*
              ([removed-komma-string 
+               (if (> (string-length string) 0)
                (substring string 0 
-                          (- (string-length string) 1))]
+                          (- (string-length string) 1))
+               string)]
               [added-bracket (string-append removed-komma-string
                                             "]\n},\n")])
            (set! return-string (string-append return-string added-bracket))))
        )
       
       ;now there's still one excess ","
+      (if (> (string-length return-string) 2)
       (substring return-string 0 (- (string-length return-string) 2)) ; 2 because we have the newline which apperently counts as a character aswell
+      return-string)      
       )
     
     )

@@ -106,7 +106,9 @@
     (define/public (get-all-data)
       (let* ([query "SELECT date, type, value FROM Data"]
              [result (send db-manager~ execute/return query)])
+        (if (not(= (send result number-rows) 0))
         (handle-data-result result)
+        '())
        ))
     
     ;Returns data for specific type
