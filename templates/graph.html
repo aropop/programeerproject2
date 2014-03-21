@@ -1,0 +1,23 @@
+<!-- Graph template -->
+<script language="javascript" type="text/javascript" src="@|jquery|"></script>
+<script language="javascript" type="text/javascript" src="@|flot-js|"></script>
+<script type="text/javascript">
+
+ $(function() {
+
+                var datasets = [
+@json-data
+];
+
+
+            $.plot("#placeholder", datasets);
+        });
+
+</script>
+
+<div id="placeholder" class="demo-placeholder" style="float:left; width:675px; height:300px;"></div> 
+Change the time diffrence to:<br />
+@in[t time-diffs]{
+<a href="?page=@|current-page|&time_diff=@(car t)">@(cdr t)</a><br />
+}
+
