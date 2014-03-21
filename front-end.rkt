@@ -101,7 +101,7 @@
                   )
              (set! inside-main (include-template "templates/data-start.html")))]
           
-          [(equal? page "data_whole_system")
+          [(equal? page "data_whole_system") ; bug with minute data of diffrent hours is shown
            (let* ([unparsed-data (send master~ get-data 'all)]
                   [current-time-diff (string->symbol (extract-binding/single 'time_diff (request-bindings requests)))]
                   [json-data (send (new parser%) unparse-to-json unparsed-data current-time-diff)]                  

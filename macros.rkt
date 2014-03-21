@@ -11,6 +11,7 @@
 
 (provide define* accumulate)
 
+;Macro that makes it possible to define multiple private fields
 (define-syntax define*
   (syntax-rules ()
     [(define* [a b]) (define a b)]

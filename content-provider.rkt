@@ -9,7 +9,7 @@
 ;---------------------------------------------------------------------
 
 (require "database-manager.rkt"
-         "steward.rkt"
+         "steward-wraper.rkt"
          "device.rkt"
          "macros.rkt"
          "generic-data.rkt")
@@ -27,15 +27,16 @@
     
     ;returns the stored stewards as steward objects
     (define/public (get-stewards master)
-      (let* ([query "SELECT steward_id, room_name FROM Steward"]
+      (let* ([query "SELECT steward_id, room_name, ip, port FROM Steward"]
              [steward-data (send db-manager~ execute/return query)]
-             [create-steward (lambda (id place)
+             [create-steward (lambda (id place ip port)
                                (let ([devices (get-devices id place)])
-                                 (new steward% 
+                                 (new steward-wrapper% ;make a wrapper will connect when needed
                                       [place~ place]
-                                      [master master]
-                                      [devices devices]
-                                      [is-already-stored #t]
+                                      [master~ master]
+                                      [devices~ devices]
+                                      [ip~ ip]
+                                      [port~ port]
                                       [steward-id~ id])))])
         (let loop
           ([stewards-list '()])          
@@ -46,7 +47,9 @@
                 (loop
                  (cons (create-steward 
                         (send steward-data get-current-row-colum 0)
-                        (send steward-data get-current-row-colum 1))
+                        (send steward-data get-current-row-colum 1)
+                        (send steward-data get-current-row-colum 2)
+                        (send steward-data get-current-row-colum 3))
                        stewards-list)))))
         )
       )
@@ -55,7 +58,11 @@
     ;returns the devices as device objects
     (define/private (get-devices steward-id place)
       (let* (;prepare the query
-             [query (string-append "SELECT device_id, type , name, serial_number, communication_adress FROM Device WHERE steward_id=" (number->string steward-id))]
+             [query 
+              (string-append 
+               "SELECT device_id, type , name, serial_number, communication_adress
+                  FROM Device WHERE steward_id=" 
+               (number->string steward-id))]
              ;execute the query
              [query-result (send db-manager~ execute/return query)]
              ;create a procedure that creates the objects which represent the devices
@@ -99,7 +106,7 @@
     ;returns all rooms
     (define/public (get-rooms)
       (let* ([query "SELECT name FROM Room"]
-            [result (send db-manager~ execute/return query)])
+             [result (send db-manager~ execute/return query)])
         (send result get-colum 0)))
     
     ;Returns all data in the dated data type
@@ -107,9 +114,9 @@
       (let* ([query "SELECT date, type, value FROM Data"]
              [result (send db-manager~ execute/return query)])
         (if (not(= (send result number-rows) 0))
-        (handle-data-result result)
-        '())
-       ))
+            (handle-data-result result)
+            '())
+        ))
     
     ;Returns data for specific type
     (define/public (get-data-for-type type)
@@ -121,8 +128,8 @@
     
     ;This procedure handles the conversion of db-result to list of dated-data-objects
     (define/private (handle-data-result result)
-     (let lp ([list-of-dated-data '()])
-          (send result get-next-row)
+      (let lp ([list-of-dated-data '()])
+        (send result get-next-row)
         (if (send result at-end?)
             list-of-dated-data
             (lp (cons 
@@ -147,7 +154,7 @@
              [result (send db-manager~ execute/return query)])
         (send result get-next-row)
         (send result get-current-row-colum 0)))
-
+    
     
     
     )

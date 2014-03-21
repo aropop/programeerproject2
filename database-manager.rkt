@@ -39,6 +39,8 @@ device_id INT REFERENCES Device(device_id) ON UPDATE CASCADE ON DELETE SET NULL
         
         "CREATE TABLE Steward (
 steward_id INTEGER PRIMARY KEY ASC AUTOINCREMENT,
+ip VARCHAR(15) NOT NULL,
+port INT NOT NULL,
 room_name VARCHAR(30) REFERENCES Room(name) ON UPDATE CASCADE ON DELETE SET NULL
 );"
         
@@ -73,7 +75,8 @@ steward_id INT REFERENCES Steward(steward_id) ON UPDATE RESTRICT ON DELETE CASCA
       )
     
     ;Returns the last inserted id after an insert operation
-    ;More info on simple restult structs http://docs.racket-lang.org/db/query-api.html#%28def._%28%28lib._db%2Fbase..rkt%29._simple-result%29%29
+    ;More info on simple restult structs 
+    ;http://docs.racket-lang.org/db/query-api.html#%28def._%28%28lib._db%2Fbase..rkt%29._simple-result%29%29
     (define/public (last-inserted-id)
       (if (eq? 'none last-query~)
           (error "No query executed to get last inserted id")

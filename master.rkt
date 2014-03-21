@@ -11,7 +11,6 @@
 
 (require "content-provider.rkt"
          "content-storer.rkt"
-         "steward.rkt"
          "device.rkt"
          "macros.rkt"
          "database-manager.rkt"
@@ -50,7 +49,8 @@
         (set! data-thread~ (thread (lambda () 
                                      (define x (current-milliseconds))
                                      (let loop ()
-                                       (if (> (- (current-milliseconds) x) (get-field data-get-interval SETTINGS))
+                                       (if (> (- (current-milliseconds) x) 
+                                              (get-field data-get-interval SETTINGS))
                                            (begin (collect-data)
                                                   (set! x (current-milliseconds))
                                                   (loop))
@@ -80,7 +80,7 @@
     ;Adds a device
     (define/public (add-device type name place serial-port communication-address)
       (define steward 'none-found) ;steward where the device should be added
-      (define create-device (lambda (type name serial-number com-adr) 
+      (define create-device (lambda (type name serial-number com-adr) ;TODO: map tussen creators & types
                               (cond [(eq? type 'switch) 
                                      (new switch%
                                           [place~ place]
@@ -107,7 +107,9 @@
       (if (eq? steward 'none-found)
           (error "No steward for supplied room")
           ;add the device to the steward
-          (send steward add-device (create-device (string->symbol type) name serial-port communication-address)))
+          (send steward 
+                add-device 
+                (list (string->symbol type) name serial-port communication-address)))
       ;save the current-state 
       (save))
     
