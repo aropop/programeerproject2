@@ -62,10 +62,7 @@
        database-manager~
        execute/no-return
        (string-append
-        "INSERT INTO Room VALUES ('" room-name "')"
-        )
-       )
-      )
+        "INSERT INTO Room VALUES ('" room-name "')")))
     
     ;stores a generic data object
     (define/private (store-data response-message-object)
@@ -123,41 +120,12 @@
     ;stores a steward to the database
     (define/private (store-steward steward)
       ;get all the info 
-      (let ([steward-id (get-field steward-id~ steward)]
-            [room (get-field place~ steward)])
-        ;update query or insert query
-        (cond [(send steward is-already-stored?) ;device is already in the database so we need to update
-               (let ([query (string-append "UPDATE Steward SET "
-                                           "room_name='" room "' "
-                                           "WHERE steward_id=" (number->string steward-id))]
-                     )
-                 ;store the query
-                 (send database-manager~ execute/no-return query)
-                 )
-               ]
-              [else ;steward is not stored already
-               ;make sure the room is stored
-               (cond [(not (is-room-stored? room))
-                      ;if not stored store it
-                      (store-room room)])
-               ;build the query to store the steward
-               (let ([query (string-append
-                             "INSERT INTO Steward (room_name) VALUES ('"
-                             room "')")])
-                 ;execute query
-                 (send database-manager~ execute/no-return query)
-                 ;set the device id right so that the devices are stored with the correct id
-                 (set! steward-id (send database-manager~ last-inserted-id))
-                 )
-               ]
-              )
-        
-        ;store the devices too
-        (map (lambda (device)
-               (store-device device steward-id)) ;we do not know if it is already stored so we add the id
-             (send steward get-device-list))           
-        )
-      )
+      (let ([room (get-field place~ steward)])
+        (when (not (is-room-stored? room))
+               (store-room room))
+        (send database-manager~ execute/no-return (send steward create-sql))
+        (when (not (send steward is-already-stored?))
+          (set-field! steward-id~ steward (send database-manager~ last-inserted-id)))))
     
     
     

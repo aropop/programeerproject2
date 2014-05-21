@@ -11,18 +11,20 @@
 ;---------------------------------------------------------------------
 
 (require "macros.rkt"
+         "database-saveable.rkt"
          racket/tcp)
 
 (provide steward-wrapper%)
 
 (define steward-wrapper%
-  (class object%
+  (class* object% (database-saveable<%>)
     (super-new)
     
     (init-field
      (ip~ "127.0.0.1")
-     (master~ 'nothing)
+     ;(master~ 'nothing)
      (devices~ '())
+     (place~ "nowhere")
      (port~ 0))
     
     (define*
@@ -46,18 +48,18 @@
     (define/private (connect-to-pi)
       ;with-handlers is try in scheme
       (with-handlers ((exn:fail:network (lambda (exn) 
-                                         (error "Could not connect to steward at " 
-                                                ip~ ":" port~ ", probaly offline")
+                                          (error "Could not connect to steward at " 
+                                                 ip~ ":" port~ ", probaly offline")
                                           #f)))
-                    (let-values (((i o) (tcp-connect ip~ port~)))
-                      (set! input-port~ i)
-                      (set! output-port~ o))))
+        (let-values (((i o) (tcp-connect ip~ port~)))
+          (set! input-port~ i)
+          (set! output-port~ o))))
     
     
     ;Public interface
     ;Returns only info about these devices
     (define/public (get-devices)
-      (send-to-pi '(get-devices)))
+      (send-to-pi '(get-device-list)))
     
     ;Make some functions local for performance
     (define/public (get-type)
@@ -75,7 +77,29 @@
              (set! steward-id~ id)
              (send-to-pi `(set-id! ,id))]))
     
+    (define/public (store-sql)
+      (cond [(is-already-stored?) ;device is already in the database so we need to update
+             (let ([query (string-append "UPDATE Steward SET "
+                                         "room_name='" place~ "' "
+                                         "WHERE steward_id=" (number->string steward-id~))])
+               ;store the query
+               query)]
+            [else ;steward is not stored already
+             ;build the query to store the steward
+             (let ([query (string-append
+                           "INSERT INTO Steward (room_name) VALUES ('"
+                           place~ "')")])
+               ;return query
+               query)]))
     
-    
-    )
+    ;Makes a steward-wrapper object
+    (define/public (create-lambda)
+      (lambda (id place ip port devices) 
+        (new steward-wrapper% ;make a wrapper will connect when needed
+             [place~ place]
+             [devices~ devices]
+             [ip~ ip]
+             [port~ port]
+             [steward-id~ id])))
+    ) 
   )

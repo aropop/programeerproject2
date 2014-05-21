@@ -13,7 +13,43 @@
          "generic-data.rkt"
          "settings.rkt")
 (provide switch% thermometer% supported-device-types)
+
 (define supported-device-types '(switch thermometer))
+
+;Makes a hashmap with keys supported types (check above) and values lambda's to create the types
+(define type-create-map 
+  (make-hash 
+   (list
+    (cons 'switch (lambda (device-id com ser pla nam)
+                    (new switch% 
+                         [communication-address~ com]
+                         [device-id~ device-id]
+                         [place~ pla]
+                         [name~ nam])))
+    (cons 'thermometer (lambda (device-id com ser pla nam)
+                    (new thermometer% 
+                         [communication-address~ com]
+                         [device-id~ device-id]
+                         [place~ pla]
+                         [name~ nam]))))))
+;Deserializes the vector from the steward to an object
+(define (deserialize device-vect)
+  (cond 
+    [(vector? device-vect)
+     (error "Cannot deserialize: Not a vector " device-vect)]
+    [(or
+      (not (eq? (vector-ref device-vect 0) 'device))
+      (not (= (vector-length device-vect) 7)))
+     (error "Cannot deserialize: Vector is not correct " device-vect)]
+    [else
+     (let ([create-lambda (hash-ref type-create-map 
+                                    (vector-ref device-vect 6))])
+       (create-lambda (vector-ref device-vect 1) 
+                      (vector-ref device-vect 2) 
+                      (vector-ref device-vect 3) 
+                      (vector-ref device-vect 4) 
+                      (vector-ref device-vect 5)))]))
+
 (define device%
   (class object%
     (super-new)

@@ -1,17 +1,22 @@
 #lang r5rs
 
-
-(#%provide device-r5rs)
+;(#%require "xbee-simulation.rkt")
+(#%provide device-slip)
 
 ;Wraper for the devices 
-(define (device-r5rs device-id com ser pla nam)
-  
-  (define (send-message mes)
-    'iets)
-  
+(define (device-slip device-id com ser pla nam type)
+   
+  (define (serialize)
+    (vector 'device device-id com ser pla nam type))
   
   (define (dispatch mes . args)
-    (cond  ((eq? mes 'send-message) (apply args send-message))
+    (cond  ((eq? mes 'get-device-id) device-id)
+           ((eq? mes 'get-address) com)
+           ((eq? mes 'serialize) (serialize))
+           ((eq? mes 'get-place) pla)
+           ((eq? mes 'get-type) type)
+           ((eq? mes 'get-ser) ser)
+           ((eq? mes 'get-name) nam)
            (else '(Unknown message))))
   
   dispatch)
