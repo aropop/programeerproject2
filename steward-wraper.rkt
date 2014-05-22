@@ -47,7 +47,7 @@
     
     (define/private (connect-to-pi)
       ;with-handlers is try in scheme
-      (with-handlers ((exn:fail:network (lambda (exn) 
+      (with-handlers ((exn:fail:network? (lambda (exn) 
                                           (error "Could not connect to steward at " 
                                                  ip~ ":" port~ ", probaly offline")
                                           #f)))
@@ -60,6 +60,9 @@
     ;Returns only info about these devices
     (define/public (get-devices)
       (send-to-pi '(get-device-list)))
+    
+    (define/public (send-message-to-device device-id mes)
+      (send-to-pi `(send-message-to-device ,device-id ,mes)))
     
     ;Make some functions local for performance
     (define/public (get-type)

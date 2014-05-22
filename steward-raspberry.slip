@@ -1,0 +1,181 @@
+;---------------------------------------------------------------------
+;|
+;|    Steward.rkt 
+;|    Arno De Witte - Programmeerproject 2
+;|    Code that runs on the raspberry
+;|
+;---------------------------------------------------------------------
+
+(define (steward% devices id place port)
+  (let 
+    ;public
+      ((devices~ devices)
+       (steward-id~ id)
+       (place~ place)
+       ;private
+       (xbee (xbee-init "/dev/ttyUSB0" 9600)))  
+    
+    (define (get-field field device)
+      'iets)
+    
+    (define (error . mes)
+      (display mes))
+    
+    (define (string->list str)
+      (define l (string-length str))
+      (define (lp i lst)
+        (if (< i 0)
+            lst
+            (lp (+ i 1) (cons (string-ref str i) lst))))
+      (lp l '()))
+    
+    ;returns the device for the given id
+    (define (get-device device-id)
+      (define (filter lam list)
+        (define (lp r rest)
+          (cond
+            ((null? rest) r)
+            ((lam (car rest))
+             (lp (cons (car rest) r) (cdr rest)))
+            (else 
+             (lp r (cdr rest)))))
+        (lp '() list))
+      (let ((filtered
+             (filter (lambda (device)
+                       (= device-id (get-field 'device-id~ device)))
+                     devices~)))
+        (if (null? filtered)
+            (error "No such device in this steward, device id:" device-id " steward id:" steward-id~)
+            (car filtered))))
+    
+    ;returns #t if the device is in the list
+    (define (has-device device-id)
+      (define has-device-bool #f)
+      (map (lambda (device)
+             (if (= device-id (get-field 'device-id~ device))
+                 (set! has-device-bool #t)))
+           devices~)
+      has-device-bool)
+    
+    ;returns the list of device objects
+    (define (get-device-list)
+      (map (lambda (dev)
+             (dev 'serialize))
+           devices~))
+    
+    ;defines if this steward is already in the database
+    (define (is-already-stored?)
+      (> steward-id~ 0))
+    
+    
+    ;this way its able to edit id when converting from local to stored steward
+    (define (set-id! id)
+      (if (> steward-id~ 0)
+          (error "This object already has an id")
+          (set! steward-id~ id)))
+    
+    ;Converts a byte vector to a vector with hexadecimal strings
+    (define (byte-vector->hex-vector byte-vector)
+      (define l (bytevector-length byte-vector))
+      (define ret (make-vector (bytevector-length byte-vector)))
+      (define (lp idx)
+        (define (to-hex d) ;http://en.wikipedia.org/wiki/Hexadecimal#Binary_conversion
+          (define r (modulo d 16))
+          (if (= 0 (- d r))
+              (to-char r)
+              (string-append (to-hex (/ (- d r) 16)) (to-char r))))
+        (define (to-char n)
+          (define chars (vector "0" "1" "2" "3" "4" "5" "6" "7" "8" "9" "A" "B" "C" "D" "E" "F"))
+          (vector-ref chars n))
+        
+        (if (>= idx l)
+            ret
+            (begin
+              (vector-set! ret idx (to-hex (bytevector-ref byte-vector idx)))
+              (lp (+ idx 1)))))
+      (lp 0))
+    
+   
+    
+    ;Adds a device
+    ;Device should be a list whith the arguments to make an raspberry device ADT
+    (define (add-device device-list)
+      (let ((device (apply device-list device-slip))) 
+        (set! devices~ (cons device devices~))))
+    
+    ;Sends a single message to a device
+    (define (send-message-to-device device-id mes)
+      (define dev (get-device device-id))
+      (define message-bytes (list->byte-vector (map char->integer (string->list mes))))
+      (send-bytes-to-device message-bytes (dev 'get-address)))
+    
+    (define (send-bytes-to-device bytes adr)
+      (xbee-write xbee adr bytes)
+      (define (read-loop idx)
+        (if (> idx 1)
+            (begin
+              (print-frame (xbee-read-frame))
+              (read-loop (- idx 1)))
+            (xbee-read xbee)))
+      (read-loop (xbee-tick xbee)))
+    
+    ;Creates a device object from an xbee-node
+    (define (create-device xbee-node)
+      (define (get-device-type)
+        (define PLUG "PID=ZBS-110")
+        (define MULTISENSOR "PID=ZBS-121")
+        (define get-bytes (list->vector (map char->integer (string->list "DEV PID"))))
+        (send-bytes-to-device get-bytes (car xbee-node))
+        #t)
+      (device-slip
+       (car xbee-node)
+       (cadr xbee-node)
+       "ser does not matter"
+       place~
+       "name"
+       (get-device-type)))
+    
+    (define (dispatch mes . args)
+      (cond 
+        ((eq? mes 'has-device) (apply has-device args))
+        ((eq? mes 'is-already-stored?) (is-already-stored?))
+        ((eq? mes 'add-device) (apply add-device args))
+        ((eq? mes 'send-message-to-device) (apply send-message-to-device args))
+        ((eq? mes 'get-device-list) (get-device-list))
+        ((eq? mes 'set-id!) (apply set-id! args))
+        (else (displayln mes) 
+              '(Unknown Message))))
+    
+    ;Help procedure to facilitate debuging
+    (define (displayln mes)
+      (display mes)
+      (newline))
+    
+    (define (loop in out xbee)
+      (display "started")
+      (let
+          ((mes (read in))
+           (devices (xbee-list)))
+        (display "Device-list: ") (displayln devices)
+        (set! devices~ (map create-device devices))
+        (display "Got: ")(displayln mes)
+        ;2 lets because we need to have the devices updated
+        (let ((response (dispatch (car mes) (cdr mes))))
+          (display "Response: ")(displayln response)                              
+          (write response out)
+          (newline out)
+          (flush-output out)
+          (loop in out xbee))))
+    
+    
+    ;listens to the steward wrapper for the messages
+    (let ((io (tcp-accept port))
+          (in (car io))
+           (out (cdr io)))
+      (displayln "Connected over TCP/IP")
+      
+      (xbee-discover xbee)
+      
+      (loop in out xbee))))
+
+(define steward (steward% (list (device-slip 1 2 3 4 5 'switch)) 3 "Kamer Arno" 12345))

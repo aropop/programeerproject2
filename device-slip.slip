@@ -1,7 +1,3 @@
-#lang r5rs
-
-;(#%require "xbee-simulation.rkt")
-(#%provide device-slip)
 
 ;Wraper for the devices 
 (define (device-slip device-id com ser pla nam type)

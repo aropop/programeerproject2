@@ -1,0 +1,252 @@
+#lang r5rs
+
+
+;---------------------------------------------------------------------
+;|
+;|    Steward.rkt 
+;|    Arno De Witte - Programmeerproject 2
+;|    Code that runs on the raspberry
+;|
+;---------------------------------------------------------------------
+
+(#%require racket/tcp)
+(#%require (only racket/base let-values))
+(#%require "device-r5rs.rkt" "xbee-simulation.rkt")
+(#%provide steward%)
+
+
+(define SUPPORTED-DEVICES
+  (list 
+   (vector 'plug "PID=ZBS-110" "Plug")
+   (vector 'multiSensor "PID=ZBS-121" "MultiSensor")))
+
+(define (steward% devices id place port)
+  (let 
+      
+      ;public
+      ((devices~ devices)
+       (steward-id~ id)
+       (place~ place)
+       ;private
+       (xbee (xbee-initialise "/dev/ttyUSB0" 9600)))  
+    
+    (define (error . mes)
+      (display mes))
+    
+    (define (string->list str)
+      (define l (string-length str))
+      (define (lp i lst)
+        (if (< i 0)
+            lst
+            (lp (- i 1) (cons (string-ref str i) lst))))
+      (lp (- l 1) '()))
+    
+    ;returns the device for the given id
+    (define (get-device device-id)
+      (define (filter lam list)
+        (let lp ((r '())
+                 (rest list))
+          (cond
+            ((null? rest) r)
+            ((lam (car rest))
+             (lp (cons (car rest) r) (cdr rest)))
+            (else 
+             (lp r (cdr rest))))))
+      (let ((filtered
+             (filter (lambda (device)
+                       (equal? device-id (device 'get-id)))
+                     devices~)))
+        (if (null? filtered)
+            (error "No such device in this steward, device id:" device-id " steward id:" steward-id~)
+            (car filtered))))
+    
+    ;returns #t if the device is in the list
+    (define (has-device device-id)
+      (define has-device-bool #f)
+      (map (lambda (device)
+             (if (equal? device-id (device 'get-id))
+                 (set! has-device-bool #t)))
+           devices~)
+      has-device-bool)
+    
+    ;returns the list of device objects
+    (define (get-device-list)
+      (map (lambda (dev)
+             (dev 'serialize))
+           devices~))
+    
+    ;defines if this steward is already in the database
+    (define (is-already-stored?)
+      (> steward-id~ 0))
+    
+    
+    ;this way its able to edit id when converting from local to stored steward
+    (define (set-id! id)
+      (if (> steward-id~ 0)
+          (error "This object already has an id")
+          (set! steward-id~ id)))
+    
+    ;Converts a byte vector to a vector with hexadecimal strings
+    (define (byte-vector->hex-vector byte-vector)
+      (define l (vector-length byte-vector))
+      (define (lp idx)
+        (define (to-hex d) ;http://en.wikipedia.org/wiki/Hexadecimal#Binary_conversion
+          (define r (modulo d 16))
+          (if (= 0 (- d r))
+              (to-char r)
+              (string-append (to-hex (/ (- d r) 16)) (to-char r))))
+        (define (to-char n)
+          (define chars (vector "0" "1" "2" "3" "4" "5" "6" "7" "8" "9" "A" "B" "C" "D" "E" "F"))
+          (vector-ref chars n))
+        
+        (if (>= idx l)
+            byte-vector
+            (begin
+              (vector-set! byte-vector idx (to-hex (vector-ref byte-vector idx)))
+              (lp (+ idx 1)))))
+      (lp 0))
+    
+    ;Converts to a string
+    (define (bytevector->string byte-vector . fromTo)
+      (define l (-
+                 (bytevector-length byte-vector)
+                 (cond ;String might be too big
+                   ((null? fromTo) 0)
+                   ((null? (cdr fromTo)) (car fromTo))
+                   (els (+ (car fromTo) (cadr fromTo))))))
+      (define (lp idx str-idx str)
+        (if (or
+             (>= idx l)
+             (and 
+              (= (length fromTo) 2)
+              (>= idx (cadr fromTo))))
+            str
+            (begin
+              (string-set! str str-idx (integer->char (bytevector-ref byte-vector idx)))
+              (lp (+ idx 1) (+ str-idx) str))))
+      (if (>= (length fromTo) 2)
+          (lp (car fromTo) 0 (make-string l))
+          (lp 0 0 (make-string l))))
+    
+    (define (bytevector-equal? bv1 bv2)
+      (define (eq-lp idx)
+        (if (>= idx (bytevector-length bv1))
+            #t
+            (and (= (bytevector-ref bv1 idx) (bytevector-ref bv2 idx))
+                 (eq-lp (+ idx 1)))))
+      (and
+       (= (bytevector-length bv1) (bytevector-length bv2))
+       (eq-lp 0)))
+    
+    ;Adds a device
+    ;Device should be a list whith the arguments to make an raspberry device ADT
+    (define (add-device device-list)
+      (let ((device (apply device-list device-slip))) 
+        (set! devices~ (cons device devices~))))
+    
+    ;Sends a single message to a device
+    (define (send-message-to-device device-id mes)
+      (define dev (get-device device-id))
+      (define message-bytes (list->vector (map char->integer (string->list mes))))
+      (let ((frame (send-bytes-to-device message-bytes (dev 'get-address))))
+        (bytevector->string frame 12 (- (bytevector-length frame) 2))))
+    
+    ;Sends the actual data
+    (define (send-bytes-to-device bytes adr)
+      (displayln adr)
+      (define (frame-type frame)
+        (bytevector-ref frame 0))
+      (define (frame-address frame)
+        (define frame-adr (make-bytevector 8))
+        (define (lp idx)
+          (if (> idx 8)
+              frame-adr
+              (begin
+                (bytevector-set! frame-adr (- idx 1) (bytevector-ref frame idx))
+                (lp (+ idx 1)))))
+        (lp 1))
+      (define (read-loop idx)
+        (let ((current-frame (if (= idx 0) '() (xbee-read xbee))))
+          (cond
+            ((= 0 idx) 
+             (error "Could not find suitable message"))
+            ((and
+              (= (frame-type current-frame) 144)
+              (bytevector-equal? (frame-address current-frame) adr))
+             current-frame)
+            ((and 
+              (= (frame-type current-frame) 139))
+             (displayln "Transmitting succesfull")
+             current-frame)
+            (else ;Unknown message type
+             (read-loop (+ idx 1))))))
+      (xbee-write xbee adr bytes)
+      (read-loop (xbee-tick xbee)))
+    
+    ;Creates a device object from an xbee-node
+    (define (create-device xbee-node)
+      (define (get-device-type)
+        (define (search-dev str lst)
+          (cond ((null? lst)
+                 'not-supported)
+                ((equal? str (vector-ref (car lst) 1))
+                 (vector-ref (car lst) 0))
+                (else
+                 (search-dev str (cdr lst)))))
+        (define get-bytes (list->bytevector (map char->integer (string->list "DEV PID"))))
+        (define return-frame (send-bytes-to-device get-bytes (cadr xbee-node)))
+        (if (bytevector? return-frame)
+            (let ((string (bytevector->string return-frame 12)))
+              (search-dev string SUPPORTED-DEVICES))
+            (error "Error searching device type")))
+      (device-slip
+       (car xbee-node)
+       (cadr xbee-node)
+       "ser does not matter"
+       place~
+       "name"
+       (get-device-type)))
+    
+    (define (dispatch mes . args)
+      (cond 
+        ((eq? mes 'has-device) (apply has-device (car args)))
+        ((eq? mes 'is-already-stored?) (is-already-stored?))
+        ((eq? mes 'add-device) (apply add-device (car args)))
+        ((eq? mes 'send-message-to-device) (apply send-message-to-device (car args)))
+        ((eq? mes 'get-device-list) (get-device-list))
+        ((eq? mes 'set-id!) (apply set-id! args))
+        (else (displayln mes) 
+              '(Unknown Message))))
+    
+    ;Help procedure to facilitate debuging
+    (define (displayln mes)
+      (display mes)
+      (newline))
+    
+    (define (loop in out xbee)
+      (let
+          ((mes (read in))
+           (devices (xbee-list)))
+        (display "Device-list: ") (displayln devices)
+        (set! devices~ (map create-device devices))
+        (display "Got: ")(displayln mes)
+        ;2 lets because we need to have the devices updated
+        (let ((response (dispatch (car mes) (cdr mes))))
+          (display "Response: ")(displayln response)                              
+          (write response out)
+          (newline out)
+          (flush-output out)
+          (loop in out xbee))))
+    
+    ;listens to the steward wrapper for the messages
+    ;(let ((io (tcp-accept (tcp-listen port)))
+    ;      (in (car io))
+    ;       (out (cdr io)))
+    (let-values (((in out) (tcp-accept (tcp-listen port))))
+      (displayln "Connected over TCP/IP")
+      
+      (xbee-discover-nodes xbee)
+      
+      (loop in out xbee))))
+
+(define steward (steward% (list (device-slip 1 2 3 4 5 'switch)) 3 "Kamer Arno" 1234))
