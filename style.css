@@ -1,0 +1,78 @@
+/*colors
+lineblue: 4964DE
+backgroundheader blue: 9AACFC
+*/
+body{
+	margin-top: 0px;
+	margin-left:0px;
+	font-family:"Arial", sans-serif;
+}
+#heading {
+	background: #9AACFC url('./images/stripes.png') repeat;
+	padding:10px;
+    padding-right:0px;
+	height:10%;
+	width:100%;
+	}
+
+#heading h1{
+	margin:0px;
+}
+#heading a {
+	color:grey;
+	text-decoration:none;
+	}
+#menu {
+	margin-top:1.4%;
+}
+#menu ul{
+	margin-bottom:-10px; /*must be equal to padding heading*/
+	padding:0px;
+}
+#menu li{
+	border-top: 1px solid black;
+	border-left: 1px solid black;
+	border-right: 1px solid black;
+	display:inline;
+	list-style-type:none;
+    	margin-right:-1px;
+	padding:4px;
+	padding-bottom:1px;
+	background-color:#9AACFC;
+}
+#menu li :hover {
+    background-color: #9AACFC;
+}
+#menu a{
+	color: black;
+}
+#main {
+    margin: 10px;
+    background-color:white;
+	border:groove;
+	height:80%;
+}
+
+td {
+	padding:4px;
+	border-bottom: 1px solid black;
+
+}
+
+th{
+      text-align:left;
+}
+
+input {
+      margin: 0px;
+      border: 1px solid #9AACFC;
+}
+
+button {
+      color:white;
+      background-color: white;
+      border:0;
+}
+
+
+
