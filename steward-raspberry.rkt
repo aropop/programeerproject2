@@ -23,6 +23,7 @@
 
 (define package-recieved-code 144)
 (define package-recieved-data-offset 12)
+(define package-recieved-end-length 2)
 (define package-transmit-info-code 139)
 (define package-transmit-succes 0)
 (define package-transmit-offset 4)
@@ -164,7 +165,8 @@
       (define dev (get-device device-id))
       (define message-bytes (list->vector (map char->integer (string->list mes))))
       (let ((frame (send-bytes-to-device message-bytes (dev 'get-address))))
-        (bytevector->string frame package-recieved-data-offset (- (bytevector-length frame) 2))))
+        (bytevector->string frame package-recieved-data-offset (- (bytevector-length frame) 
+                                                                  package-recieved-end-length))))
     
     ;Sends the actual data
     (define (send-bytes-to-device bytes adr)
@@ -190,7 +192,8 @@
             ((and
               (= (frame-type current-frame) package-recieved-code)
               (bytevector-equal? (frame-address current-frame) adr))
-             (display "Got frame, message: ") (displayln (bytevector->string current-frame 12))
+             (display "Got frame, message: ") 
+             (displayln (bytevector->string current-frame package-recieved-data-offset))
              current-frame)
             ;Frame is a succesfull set
             ((and
@@ -224,7 +227,7 @@
             (let ((string (bytevector->string 
                            return-frame 
                            package-recieved-data-offset 
-                           (- (bytevector-length return-frame) 2))))
+                           (- (bytevector-length return-frame) package-recieved-end-length))))
               (search-dev string SUPPORTED-DEVICES))
             (error "Error searching device type")))
       (device-slip

@@ -77,6 +77,12 @@
     (define/public (get-device-status device-id) ;TODO:parse data
       (send-to-pi `(send-message-to-device ,device-id "GET")))
     
+    (define/public (message-all-devices)
+      (map
+       (lambda (device)
+         (get-device-status (get-field id~ device)))
+       devices~))
+    
     ;Make some functions local for performance
     (define/public (get-type)
       'steward)

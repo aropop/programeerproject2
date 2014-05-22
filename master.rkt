@@ -85,7 +85,7 @@
                         [place~ place]
                         [master~ this]))
       (set! stewards~ (cons stew stewards~))
-      ;(save)
+      (save)
       stew)
     
     ;Returns a list with all the rooms in the system
