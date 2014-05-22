@@ -77,43 +77,6 @@
     (define/public (get-stewards)
       stewards~)
     
-    ;Adds a device
-    (define/public (add-device type name place serial-port communication-address)
-      (define steward 'none-found) ;steward where the device should be added
-      (define create-device (lambda (type name serial-number com-adr) ;TODO: map tussen creators & types
-                              (cond [(eq? type 'switch) 
-                                     (new switch%
-                                          [place~ place]
-                                          [communication-address~ com-adr]
-                                          [name~ name]
-                                          [serial-number~ serial-number])]
-                                 
-                                    [(eq? type 'thermometer)
-                                     (new thermometer%
-                                          [place~ place]
-                                          [communication-address~ com-adr]
-                                          [name~ name]
-                                          [serial-number~ serial-number])]
-                                    ;new types of devices should be added here
-                                    [else
-                                     (error "Cannot create device from type " type)])))
-      ;Search the device for a certain room
-      (map (lambda (s)
-             (if (equal? (get-field place~ s) place)
-                 (set! steward s)
-                 'niets))
-           (get-stewards))
-      ;Error if there is no steward in that room
-      (if (eq? steward 'none-found)
-          (error "No steward for supplied room")
-          ;add the device to the steward
-          (send steward 
-                add-device 
-                (list (string->symbol type) name serial-port communication-address)))
-      ;save the current-state 
-      (save))
-    
-    
     ;Returns a list with all the rooms in the system
     (define/public (get-all-rooms)
       (send content-provider~ get-rooms))
@@ -131,8 +94,7 @@
     ;Has to be called upon shutting the system down
     (define/public (destruct)
       (save)
-      (kill-thread data-thread~)
-      )
+      (kill-thread data-thread~))
     
     
     ;saves 
@@ -145,8 +107,7 @@
       (display "Saved")
       (newline)
       ;set the last save time
-      (set! last-saved~ (current-milliseconds))
-      )
+      (set! last-saved~ (current-milliseconds)))
     
     ;Procedure that returns facts about the system
     (define/public (get-facts fact)
@@ -164,8 +125,7 @@
           0
           (get-stewards))]
         [(eq? fact 'amount-stewards)
-         (length (get-stewards))]
-        ))
+         (length (get-stewards))]))
            
     
     ;Procedure that will be executed to collect data
@@ -186,9 +146,7 @@
         ;debugging
         (display "Collected data on ")
         (display (current-milliseconds))
-        (newline)
-        )
-      )
+        (newline)))
     
     ;procedure that dispatches the calls for data from a front end
     (define/public (get-data which . options)

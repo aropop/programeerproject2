@@ -14,7 +14,7 @@
          "database-saveable.rkt"
          racket/tcp)
 
-(provide steward-wrapper%)
+(provide steward-wrapper% steward-wrapper$)
 
 (define steward-wrapper%
   (class* object% (database-saveable<%>)
@@ -22,7 +22,7 @@
     
     (init-field
      (ip~ "127.0.0.1")
-     ;(master~ 'nothing)
+     (master~ 'none)
      (devices~ '())
      (place~ "nowhere")
      (port~ 0))
@@ -68,6 +68,9 @@
     (define/public (get-device-type device-id)
       (send-to-pi `(get-device-type ,device-id)))
     
+    (define/public (get-device-status device-id)
+      (send-to-pi `(send-message-to-device ,device-id "GET")))
+    
     ;Make some functions local for performance
     (define/public (get-type)
       'steward)
@@ -87,26 +90,31 @@
     (define/public (store-sql)
       (cond [(is-already-stored?) ;device is already in the database so we need to update
              (let ([query (string-append "UPDATE Steward SET "
-                                         "room_name='" place~ "' "
+                                         "room_name='" place~ "', "
+                                         "ip='" ip~"', "
+                                         "port=" (number->string port~) " "
                                          "WHERE steward_id=" (number->string steward-id~))])
                ;store the query
                query)]
             [else ;steward is not stored already
              ;build the query to store the steward
              (let ([query (string-append
-                           "INSERT INTO Steward (room_name) VALUES ('"
-                           place~ "')")])
+                           "INSERT INTO Steward (room_name, ip, port) VALUES ('"
+                           place~ "', '" ip~"', " (number->string port~) ")")])
                ;return query
                query)]))
     
     ;Makes a steward-wrapper object
     (define/public (create-lambda)
-      (lambda (id place ip port devices) 
+      (lambda (id place ip port devices master) 
         (new steward-wrapper% ;make a wrapper will connect when needed
              [place~ place]
              [devices~ devices]
              [ip~ ip]
              [port~ port]
              [steward-id~ id])))
-    ) 
-  )
+    
+    (define/public (get-sql)
+      "SELECT steward_id, room_name, ip, port FROM Steward")))
+
+(define steward-wrapper$ (new steward-wrapper%))

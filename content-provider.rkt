@@ -27,17 +27,9 @@
     
     ;returns the stored stewards as steward objects
     (define/public (get-stewards master)
-      (let* ([query "SELECT steward_id, room_name, ip, port FROM Steward"]
+      (let* ([query (send steward-wrapper$ get-sql)]
              [steward-data (send db-manager~ execute/return query)]
-             [create-steward (lambda (id place ip port)
-                               (let ([devices (get-devices id place)])
-                                 (new steward-wrapper% ;make a wrapper will connect when needed
-                                      [place~ place]
-                                      [master~ master]
-                                      [devices~ devices]
-                                      [ip~ ip]
-                                      [port~ port]
-                                      [steward-id~ id])))])
+             [create-steward (send steward-wrapper$ create-lambda)])
         (let loop
           ([stewards-list '()])          
           (if (send steward-data at-end?)            
@@ -49,10 +41,10 @@
                         (send steward-data get-current-row-colum 0)
                         (send steward-data get-current-row-colum 1)
                         (send steward-data get-current-row-colum 2)
-                        (send steward-data get-current-row-colum 3))
-                       stewards-list)))))
-        )
-      )
+                        (send steward-data get-current-row-colum 3)
+                        (get-devices (send steward-data get-current-row-colum 0))
+                        master)
+                       stewards-list)))))))
     
     
     ;returns the devices as device objects
@@ -60,30 +52,12 @@
       (let* (;prepare the query
              [query 
               (string-append 
-               "SELECT device_id, type , name, serial_number, communication_adress
-                  FROM Device WHERE steward_id=" 
+               (send (new device-wrapper%) get-sql)
                (number->string steward-id))]
              ;execute the query
              [query-result (send db-manager~ execute/return query)]
              ;create a procedure that creates the objects which represent the devices
-             [create-device (lambda (type device-id name serial-number com-adr) 
-                              (cond [(eq? type 'switch) 
-                                     (new switch%
-                                          [device-id~ device-id]
-                                          [place~ place]
-                                          [communication-address~ com-adr]
-                                          [name~ name]
-                                          [serial-number~ serial-number])]
-                                    [(eq? type 'thermometer)
-                                     (new thermometer%
-                                          [device-id~ device-id]
-                                          [place~ place]
-                                          [communication-address~ com-adr]
-                                          [name~ name]
-                                          [serial-number~ serial-number])]
-                                    
-                                    [else
-                                     (error "Cannot create device from type " type)]))])
+             [create-device (send device-wrapper$ create-sql)])
         ;loop over the results
         (let loop 
           ([devices-list '()])
@@ -93,15 +67,12 @@
                 (send query-result get-next-row)
                 (loop
                  (cons (create-device ;create a device and put it in the list
-                        (string->symbol (send query-result get-current-row-colum 1))
                         (send query-result get-current-row-colum 0)
+                        (send query-result get-current-row-colum 1)
                         (send query-result get-current-row-colum 2)
-                        (send query-result get-current-row-colum 3)
-                        (send query-result get-current-row-colum 4))
-                       devices-list))))
-          )                
-        )
-      )
+                        steward-id
+                        place)
+                       devices-list)))))))
     
     ;returns all rooms
     (define/public (get-rooms)
@@ -115,8 +86,7 @@
              [result (send db-manager~ execute/return query)])
         (if (not(= (send result number-rows) 0))
             (handle-data-result result)
-            '())
-        ))
+            '())))
     
     ;Returns data for specific type
     (define/public (get-data-for-type type)

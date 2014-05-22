@@ -45,11 +45,9 @@ room_name VARCHAR(30) REFERENCES Room(name) ON UPDATE CASCADE ON DELETE SET NULL
 );"
         
         "CREATE TABLE Device (
-device_id INTEGER PRIMARY KEY ASC AUTOINCREMENT,
+device_id STRING(8) PRIMARY KEY,
 type VARCHAR(20) NOT NULL,
-name VARCHAR(35) NOT NULL,
-communication_adress VARCHAR(50) NOT NULL,
-serial_number INT NOT NULL,
+communication_address VARCHAR(50) NOT NULL,
 steward_id INT REFERENCES Steward(steward_id) ON UPDATE RESTRICT ON DELETE CASCADE
 );" )]
       )

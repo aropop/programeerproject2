@@ -19,64 +19,23 @@ document.addDeviceForm.deviceSerialNumberInput.value = document.getElementById("
 <p id="description">Devices in the system</p>
 <table>
 <tr>
-<th>ID</th>
 <th>Name </th>
 <th>Type</th>
 <th>Room</th>
-<th>Serial Number</th>
 <th>Communication Address</th>
 <th>Status</th>
 </tr>
 @in[s stewards]{
 @in[d (send s get-device-list)]{
 <tr>
-<td>@(get-field device-id~ d)</td>
 <td>@(get-field name~ d)</td>
 <td>@(send d get-device-type)</td>
 <td>@(get-field place~ d)</td>
-<td>@(get-field serial-number~ d)</td>
 <td>@(get-field communication-address~ d)</td>
 <td>@(get-field value~ (send s get-device-status (get-field device-id~ d)))</td>
 </tr>
 }
 }
-<tr>
-<!-- 
-While it is more esthetic to use the last row as a form to add new devices, it 
-comes with some more difficulties. Because we can't use a form as the last row
-we make a small hidden form and on submit make all the values of the hidden inputs
-equal to those in the visible ones -->
-<td>Add</td>
-<td><input type="text" id="deviceName"/></td>
-<td>
-<select id="deviceType" >
-@in[d supported-device-types]{
-<option name="@|d|">@|d|</option>
-}
-</select>
-</td>
-<td id="roomTd"> 
-<!-- the inputo of this table div will be changed when the user selects add new
- room -->
-<select id="devicePlace">
-@in[r rooms]{
-<option name="@|r|">@|r|</option>
-}
-</select></td>
-<td><input type="text" id="deviceSerialNumber" /></td>
-<td><input type="text" id="deviceCommunicationAddress" /></td>
-<td>
-<!-- so this is a pure hidden form only the submit is visible -->
-<form name="addDeviceForm" method="POST">
-<input type="hidden" name="page" value="handleAddDevice">
-<input type="hidden" name="deviceNameInput"/>
-<input type="hidden" name="deviceTypeInput" />
-<input type="hidden" name="devicePlaceInput" />
-<input type="hidden" name="deviceSerialNumberInput" />
-<input type="hidden" name="deviceCommunicationAddressInput" />
-<br />
-<button onclick="setEqual()"><image src="/images/add.gif" /></button>
-</td>
 
 </table>
 

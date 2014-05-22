@@ -12,8 +12,7 @@
          web-server/http/response-structs
          web-server/http/bindings
          "settings.rkt"
-         "parser.rkt"
-         (only-in "device.rkt" supported-device-types))
+         "parser.rkt")
 
 (provide html-front-end%)
 
@@ -23,16 +22,12 @@
     (super-new)
     
     (init-field
-     [master~ 'none]
-     )
+     [master~ 'none])
     
-    (abstract start
-              )
+    (abstract start)
     
     (define/public (get-master)
-      master~)
-    )
-  )
+      master~)))
 
 (define html-front-end%
   (class front-end%
@@ -75,17 +70,6 @@
                           (cons steward (send steward get-device-list)))
                         stewards)])
              (set! inside-main (include-template "templates/devices.html")))]
-          ;do the add device action
-          [(equal? page "handleAddDevice")
-           (let* ([bindings (request-bindings requests)]
-                  [type (extract-binding/single 'devicetypeinput bindings)]
-                  [name (extract-binding/single 'devicenameinput bindings)]
-                  [place (extract-binding/single 'deviceplaceinput bindings)]
-                  [com-addr (extract-binding/single 'devicecommunicationaddressinput bindings)]
-                  [ser-num (string->number (extract-binding/single 'deviceserialnumberinput bindings))])
-             (send master~ add-device  type name place ser-num com-addr)
-             (get-inside-main-loop "devices" head heading (string-append "Succesfully added device '" name "'") inside-main))
-           ]
           
           [(equal? page "data")
            (let* ([room_tuple (map 
