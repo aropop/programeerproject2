@@ -1,3 +1,11 @@
 *.rkt~
 #*#.*
-
+compiled
+*.html~
+*.slip~
+*.aux
+*.css~
+*.out
+*.toc
+*.log
+*.pdf
