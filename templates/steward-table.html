@@ -1,17 +1,69 @@
+<script type="text/javascript">
+function setEqual(){
+/* Sets the values of the last row equal to the hidden form */
+var ip = document.getElementById("stewardIp").value;
+var port = parseInt(document.getElementById("stewardPort").value);
+var place = document.getElementById("stewardPlace").value;
+
+ if ((/^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/.test(myForm.emailAddr.value))){
+alert("Please fill in the ip correctly")} 
+
+document.addDeviceForm.stewardIpInput.value = ip;
+document.addDeviceForm.stewardPortInput.value = port;
+document.addDeviceForm.stewardPlaceInput.value = place;
+document.addDeviceForm.submit();
+}
+
+</script>
+
 <!-- steward table template -->
 <table id="steward-table">
 <tr>
 <th>ID</th>
+<th>Ip</th>
+<th>Port</th>
 <th>Room</th>
 <th>Amount of devices</th>
 </tr>
 @in[s stewards]{
-
 <tr>
 <td> @(get-field steward-id~ s) </td>
+<td> @(get-field ip~ s) </td>
+<td> @(get-field port~ s) </td>
 <td> @(get-field place~ s) </td>
 <td> @(length (send s get-device-list)) </td>
 </tr>
+}
 
-} 
+
+
+<tr>
+<!-- 
+While it is more esthetic to use the last row as a form to add new devices, it 
+comes with some more difficulties. Because we can't use a form as the last row
+we make a small hidden form and on submit make all the values of the hidden inputs
+equal to those in the visible ones -->
+<td>Add</td>
+<td><input type="text" id="stewardIpInput"/></td>
+<td><input type="text" id="stewardPortInput"/></td>
+
+<td id="roomTd"> 
+<!-- the inputo of this table div will be changed when the user selects add new
+ room -->
+<select id="stewardPlaceInput">
+@in[r rooms]{
+<option name="@|r|">@|r|</option>
+}
+</select></td>
+<td>
+<!-- so this is a pure hidden form only the submit is visible -->
+<form name="addDeviceForm" method="POST">
+<input type="hidden" name="page" value="handleAddSteward">
+<input type="hidden" name="stewardIp"/>
+<input type="hidden" name="stewardPort" />
+<input type="hidden" name="stewardPlace" /></form>
+<br />
+<button onclick="setEqual()"><image src="/images/add.gif" /></button>
+</td> 
+</tr>
 </table>

@@ -49,8 +49,11 @@ device_id STRING(8) PRIMARY KEY,
 type VARCHAR(20) NOT NULL,
 communication_address VARCHAR(50) NOT NULL,
 steward_id INT REFERENCES Steward(steward_id) ON UPDATE RESTRICT ON DELETE CASCADE
-);" )]
-      )
+);" 
+        (when (not (null? (get-field standard-rooms SETTINGS)))
+            (let ((room-query "INSERT INTO Room (room_name) VALUES "))
+              (for-each (lambda (room) (string-append room-query " ('" room "') ")))
+              room-query)))])
     
     ;Insert, delet and update queries
     (define/public (execute/no-return sql)
@@ -58,9 +61,7 @@ steward_id INT REFERENCES Steward(steward_id) ON UPDATE RESTRICT ON DELETE CASCA
           ;save last query so we can get additional info 
           (set! last-query~ (query con~ sql)) 
           (begin (do-init-tests)
-                 (execute/no-return sql))
-          )
-      )
+                 (execute/no-return sql))))
     
     ;select queries where you expect a return
     (define/public (execute/return sql)
@@ -102,9 +103,4 @@ steward_id INT REFERENCES Steward(steward_id) ON UPDATE RESTRICT ON DELETE CASCA
            (table-exists? con~ "Device")
            (table-exists? con~ "Data")
            )
-          (error "Database error, no connection!"))
-      )
-    
-    
-    )
-  )
+          (error "Database error, no connection!")))))

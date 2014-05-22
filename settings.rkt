@@ -20,6 +20,7 @@
       [title "Control Your House"]
       [data-get-interval 120000] ; 1000 = 1 second 
       [save-interval 180000]
+      [standard-rooms '("Kitchen" "Living Room" "Bathroom")]
       )
     (super-new)
     )
