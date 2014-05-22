@@ -1,6 +1,7 @@
 *.rkt~
 #*#.*
-compiled
+compiled/
+Opdrachten/
 *.html~
 *.slip~
 *.aux
@@ -9,3 +10,6 @@ compiled
 *.toc
 *.log
 *.pdf
+*.zip
+*.tex~
+*~
