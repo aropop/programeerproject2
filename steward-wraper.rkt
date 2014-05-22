@@ -11,6 +11,7 @@
 ;---------------------------------------------------------------------
 
 (require "macros.rkt"
+         "device.rkt"
          "database-saveable.rkt"
          racket/tcp)
 
@@ -48,18 +49,24 @@
     (define/private (connect-to-pi)
       ;with-handlers is try in scheme
       (with-handlers ((exn:fail:network? (lambda (exn) 
-                                          (error "Could not connect to steward at " 
-                                                 ip~ ":" port~ ", probaly offline")
-                                          #f)))
+                                           (error "Could not connect to steward at " 
+                                                  ip~ ":" port~ ", probaly offline")
+                                           #f)))
         (let-values (((i o) (tcp-connect ip~ port~)))
           (set! input-port~ i)
           (set! output-port~ o))))
     
-    
     ;Public interface
     ;Returns only info about these devices
     (define/public (get-devices)
-      (set! devices~ (send-to-pi '(get-device-list)))
+      (define (device-vector->device-obj vect)
+        (new device-wrapper%
+             [place~ (vector-ref vect 3)]
+             [com-adr~ (vector-ref vect 2)]
+             [id~ (vector-ref vect 1)]
+             [type~ (vector-ref vect 4)]
+             [steward-wrapper~ this]))
+      (set! devices~ (map device-vector->device-obj (send-to-pi '(get-device-list))))
       devices~)
     
     (define/public (send-message-to-device device-id mes)

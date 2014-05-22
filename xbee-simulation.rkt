@@ -1,7 +1,14 @@
 #lang r5rs
 
 
-;xbee sim
+;---------------------------------------------------------------------
+;|
+;|    Steward.rkt 
+;|    Arno De Witte - Programmeerproject 2
+;|    Simulates the behaviour that originialy is built into slip
+;|    (or comes with the xbee library)
+;|
+;---------------------------------------------------------------------
 
 (#%provide xbee-initialise xbee-init
            xbee-write
@@ -169,6 +176,19 @@
    ;line feeds 
    10 10)) 
 
+(define TRANSMIT-MESSAGE 
+  (vector 
+   ;message type
+   139 
+   ;16 bit address
+   0 0
+   ;retry count
+   0
+   ;delivery status
+   0
+   ;discovery status 
+   3)) 
+
 
 (define ANSWERS '())
 
@@ -194,6 +214,8 @@
       (else
        (get-ans (cdr lst)))))
   (set! ANSWERS (cons 
+                 TRANSMIT-MESSAGE
+                 (cons 
                  (get-ans MESSAGES) ANSWERS)))
 
 (define (xbee-initialise ign ore)

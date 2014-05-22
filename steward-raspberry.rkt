@@ -5,7 +5,8 @@
 ;|
 ;|    Steward.rkt 
 ;|    Arno De Witte - Programmeerproject 2
-;|    Code that runs on the raspberry
+;|    Code that runs on the raspberry (this is a simulated version
+;|    that wil run on any racket device)
 ;|
 ;---------------------------------------------------------------------
 
@@ -19,6 +20,14 @@
   (list 
    (vector 'plug "PID=ZBS-110" "Plug")
    (vector 'multiSensor "PID=ZBS-121" "MultiSensor")))
+
+(define package-recieved-code 144)
+(define package-recieved-data-offset 12)
+(define package-transmit-info-code 139)
+(define package-transmit-succes 0)
+(define package-transmit-offset 5)
+(define get-type-string "DEV PID")
+
 
 (define (steward% devices id place port)
   (let 
@@ -114,7 +123,7 @@
                  (cond ;String might be too big
                    ((null? fromTo) 0)
                    ((null? (cdr fromTo)) (car fromTo))
-                   (els (+ (car fromTo) (cadr fromTo))))))
+                   (else (+ (car fromTo) (cadr fromTo))))))
       (define (lp idx str-idx str)
         (if (or
              (>= idx l)
@@ -150,7 +159,7 @@
       (define dev (get-device device-id))
       (define message-bytes (list->vector (map char->integer (string->list mes))))
       (let ((frame (send-bytes-to-device message-bytes (dev 'get-address))))
-        (bytevector->string frame 12 (- (bytevector-length frame) 2))))
+        (bytevector->string frame package-recieved-data-offset (- (bytevector-length frame) 2))))
     
     ;Sends the actual data
     (define (send-bytes-to-device bytes adr)
@@ -169,16 +178,25 @@
       (define (read-loop idx)
         (let ((current-frame (if (= idx 0) '() (xbee-read xbee))))
           (cond
+            ;No more frames
             ((= 0 idx) 
              (error "Could not find suitable message"))
+            ;Frame is a recieved package
             ((and
-              (= (frame-type current-frame) 144)
+              (= (frame-type current-frame) package-recieved-code)
               (bytevector-equal? (frame-address current-frame) adr))
              current-frame)
-            ((and 
-              (= (frame-type current-frame) 139))
-             (displayln "Transmitting succesfull")
+            ;Frame is a succesfull set
+            ((and
+              (= (frame-type current-frame) package-recieved-code)
+              (bytevector-equal? (frame-address current-frame) adr))
              current-frame)
+            ;Transmit info package
+            ((= (frame-type current-frame) package-transmit-info-code)
+             (if (= (bytevector-ref current-frame package-transmit-offset) package-transmit-succes)
+                 (displayln "Transmitting succesfull")
+                 (displayln "Error Transmitting"))
+             (read-loop (+ idx 1))) 
             (else ;Unknown message type
              (read-loop (+ idx 1))))))
       (xbee-write xbee adr bytes)
@@ -194,10 +212,10 @@
                  (vector-ref (car lst) 0))
                 (else
                  (search-dev str (cdr lst)))))
-        (define get-bytes (list->bytevector (map char->integer (string->list "DEV PID"))))
+        (define get-bytes (list->bytevector (map char->integer (string->list get-type-string))))
         (define return-frame (send-bytes-to-device get-bytes (cadr xbee-node)))
         (if (bytevector? return-frame)
-            (let ((string (bytevector->string return-frame 12)))
+            (let ((string (bytevector->string return-frame package-recieved-data-offset)))
               (search-dev string SUPPORTED-DEVICES))
             (error "Error searching device type")))
       (device-slip
