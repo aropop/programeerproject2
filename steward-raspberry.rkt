@@ -28,7 +28,7 @@
        (steward-id~ id)
        (place~ place)
        ;private
-       (xbee (xbee-initialise "/dev/ttyUSB0" 9600)))  
+       (xbee (xbee-init "/dev/ttyUSB0" 9600)))  
     
     (define (error . mes)
       (display mes))
@@ -44,14 +44,14 @@
     ;returns the device for the given id
     (define (get-device device-id)
       (define (filter lam list)
-        (let lp ((r '())
-                 (rest list))
+        (define (lp r rest)
           (cond
             ((null? rest) r)
             ((lam (car rest))
              (lp (cons (car rest) r) (cdr rest)))
             (else 
-             (lp r (cdr rest))))))
+             (lp r (cdr rest)))))
+        (lp '() list))
       (let ((filtered
              (filter (lambda (device)
                        (equal? device-id (device 'get-id)))
@@ -88,7 +88,8 @@
     
     ;Converts a byte vector to a vector with hexadecimal strings
     (define (byte-vector->hex-vector byte-vector)
-      (define l (vector-length byte-vector))
+      (define l (bytevector-length byte-vector))
+      (define ret (make-vector (bytevector-length byte-vector)))
       (define (lp idx)
         (define (to-hex d) ;http://en.wikipedia.org/wiki/Hexadecimal#Binary_conversion
           (define r (modulo d 16))
@@ -100,9 +101,9 @@
           (vector-ref chars n))
         
         (if (>= idx l)
-            byte-vector
+            ret
             (begin
-              (vector-set! byte-vector idx (to-hex (vector-ref byte-vector idx)))
+              (vector-set! ret idx (to-hex (bytevector-ref byte-vector idx)))
               (lp (+ idx 1)))))
       (lp 0))
     

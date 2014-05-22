@@ -59,10 +59,14 @@
     ;Public interface
     ;Returns only info about these devices
     (define/public (get-devices)
-      (send-to-pi '(get-device-list)))
+      (set! devices~ (send-to-pi '(get-device-list)))
+      devices~)
     
     (define/public (send-message-to-device device-id mes)
       (send-to-pi `(send-message-to-device ,device-id ,mes)))
+    
+    (define/public (get-device-type device-id)
+      (send-to-pi `(get-device-type ,device-id)))
     
     ;Make some functions local for performance
     (define/public (get-type)

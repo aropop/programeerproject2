@@ -6,6 +6,13 @@
 ;|
 ;---------------------------------------------------------------------
 
+
+
+(define SUPPORTED-DEVICES
+  (list 
+   (vector 'plug "PID=ZBS-110" "Plug")
+   (vector 'multiSensor "PID=ZBS-121" "MultiSensor")))
+
 (define (steward% devices id place port)
   (let 
     ;public
@@ -15,9 +22,6 @@
        ;private
        (xbee (xbee-init "/dev/ttyUSB0" 9600)))  
     
-    (define (get-field field device)
-      'iets)
-    
     (define (error . mes)
       (display mes))
     
@@ -26,8 +30,8 @@
       (define (lp i lst)
         (if (< i 0)
             lst
-            (lp (+ i 1) (cons (string-ref str i) lst))))
-      (lp l '()))
+            (lp (- i 1) (cons (string-ref str i) lst))))
+      (lp (- l 1) '()))
     
     ;returns the device for the given id
     (define (get-device device-id)
@@ -42,7 +46,7 @@
         (lp '() list))
       (let ((filtered
              (filter (lambda (device)
-                       (= device-id (get-field 'device-id~ device)))
+                       (equal? device-id (device 'get-id)))
                      devices~)))
         (if (null? filtered)
             (error "No such device in this steward, device id:" device-id " steward id:" steward-id~)
@@ -52,7 +56,7 @@
     (define (has-device device-id)
       (define has-device-bool #f)
       (map (lambda (device)
-             (if (= device-id (get-field 'device-id~ device))
+             (if (equal? device-id (device 'get-id))
                  (set! has-device-bool #t)))
            devices~)
       has-device-bool)
@@ -95,7 +99,37 @@
               (lp (+ idx 1)))))
       (lp 0))
     
-   
+    ;Converts to a string
+    (define (bytevector->string byte-vector . fromTo)
+      (define l (-
+                 (bytevector-length byte-vector)
+                 (cond ;String might be too big
+                   ((null? fromTo) 0)
+                   ((null? (cdr fromTo)) (car fromTo))
+                   (els (+ (car fromTo) (cadr fromTo))))))
+      (define (lp idx str-idx str)
+        (if (or
+             (>= idx l)
+             (and 
+              (= (length fromTo) 2)
+              (>= idx (cadr fromTo))))
+            str
+            (begin
+              (string-set! str str-idx (integer->char (bytevector-ref byte-vector idx)))
+              (lp (+ idx 1) (+ str-idx) str))))
+      (if (>= (length fromTo) 2)
+          (lp (car fromTo) 0 (make-string l))
+          (lp 0 0 (make-string l))))
+    
+    (define (bytevector-equal? bv1 bv2)
+      (define (eq-lp idx)
+        (if (>= idx (bytevector-length bv1))
+            #t
+            (and (= (bytevector-ref bv1 idx) (bytevector-ref bv2 idx))
+                 (eq-lp (+ idx 1)))))
+      (and
+       (= (bytevector-length bv1) (bytevector-length bv2))
+       (eq-lp 0)))
     
     ;Adds a device
     ;Device should be a list whith the arguments to make an raspberry device ADT
@@ -106,27 +140,58 @@
     ;Sends a single message to a device
     (define (send-message-to-device device-id mes)
       (define dev (get-device device-id))
-      (define message-bytes (list->byte-vector (map char->integer (string->list mes))))
-      (send-bytes-to-device message-bytes (dev 'get-address)))
+      (define message-bytes (list->vector (map char->integer (string->list mes))))
+      (let ((frame (send-bytes-to-device message-bytes (dev 'get-address))))
+        (bytevector->string frame 12 (- (bytevector-length frame) 2))))
     
+    ;Sends the actual data
     (define (send-bytes-to-device bytes adr)
-      (xbee-write xbee adr bytes)
+      (displayln adr)
+      (define (frame-type frame)
+        (bytevector-ref frame 0))
+      (define (frame-address frame)
+        (define frame-adr (make-bytevector 8))
+        (define (lp idx)
+          (if (> idx 8)
+              frame-adr
+              (begin
+                (bytevector-set! frame-adr (- idx 1) (bytevector-ref frame idx))
+                (lp (+ idx 1)))))
+        (lp 1))
       (define (read-loop idx)
-        (if (> idx 1)
-            (begin
-              (print-frame (xbee-read-frame))
-              (read-loop (- idx 1)))
-            (xbee-read xbee)))
+        (let ((current-frame (if (= idx 0) '() (xbee-read xbee))))
+          (cond
+            ((= 0 idx) 
+             (error "Could not find suitable message"))
+            ((and
+              (= (frame-type current-frame) 144)
+              (bytevector-equal? (frame-address current-frame) adr))
+             current-frame)
+            ((and 
+              (= (frame-type current-frame) 139))
+             (displayln "Transmitting succesfull")
+             current-frame)
+            (else ;Unknown message type
+             (read-loop (+ idx 1))))))
+      (xbee-write xbee adr bytes)
       (read-loop (xbee-tick xbee)))
     
     ;Creates a device object from an xbee-node
     (define (create-device xbee-node)
       (define (get-device-type)
-        (define PLUG "PID=ZBS-110")
-        (define MULTISENSOR "PID=ZBS-121")
-        (define get-bytes (list->vector (map char->integer (string->list "DEV PID"))))
-        (send-bytes-to-device get-bytes (car xbee-node))
-        #t)
+        (define (search-dev str lst)
+          (cond ((null? lst)
+                 'not-supported)
+                ((equal? str (vector-ref (car lst) 1))
+                 (vector-ref (car lst) 0))
+                (else
+                 (search-dev str (cdr lst)))))
+        (define get-bytes (list->bytevector (map char->integer (string->list "DEV PID"))))
+        (define return-frame (send-bytes-to-device get-bytes (cadr xbee-node)))
+        (if (bytevector? return-frame)
+            (let ((string (bytevector->string return-frame 12)))
+              (search-dev string SUPPORTED-DEVICES))
+            (error "Error searching device type")))
       (device-slip
        (car xbee-node)
        (cadr xbee-node)
@@ -137,10 +202,10 @@
     
     (define (dispatch mes . args)
       (cond 
-        ((eq? mes 'has-device) (apply has-device args))
+        ((eq? mes 'has-device) (apply has-device (car args)))
         ((eq? mes 'is-already-stored?) (is-already-stored?))
-        ((eq? mes 'add-device) (apply add-device args))
-        ((eq? mes 'send-message-to-device) (apply send-message-to-device args))
+        ((eq? mes 'add-device) (apply add-device (car args)))
+        ((eq? mes 'send-message-to-device) (apply send-message-to-device (car args)))
         ((eq? mes 'get-device-list) (get-device-list))
         ((eq? mes 'set-id!) (apply set-id! args))
         (else (displayln mes) 
@@ -152,7 +217,6 @@
       (newline))
     
     (define (loop in out xbee)
-      (display "started")
       (let
           ((mes (read in))
            (devices (xbee-list)))
