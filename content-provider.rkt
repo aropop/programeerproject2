@@ -42,7 +42,8 @@
                         (send steward-data get-current-row-colum 1)
                         (send steward-data get-current-row-colum 2)
                         (send steward-data get-current-row-colum 3)
-                        (get-devices (send steward-data get-current-row-colum 0))
+                        (get-devices (send steward-data get-current-row-colum 0)
+                                     (send steward-data get-current-row-colum 1))
                         master)
                        stewards-list)))))))
     
@@ -52,12 +53,12 @@
       (let* (;prepare the query
              [query 
               (string-append 
-               (send (new device-wrapper%) get-sql)
+               (send device-wrapper$ get-sql)
                (number->string steward-id))]
              ;execute the query
              [query-result (send db-manager~ execute/return query)]
              ;create a procedure that creates the objects which represent the devices
-             [create-device (send device-wrapper$ create-sql)])
+             [create-device (send device-wrapper$ create-lambda)])
         ;loop over the results
         (let loop 
           ([devices-list '()])

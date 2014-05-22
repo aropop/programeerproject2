@@ -32,7 +32,7 @@ document.addDeviceForm.submit();
 <td> @(get-field ip~ s) </td>
 <td> @(get-field port~ s) </td>
 <td> @(get-field place~ s) </td>
-<td> @(length (send s get-devices)) </td>
+<td> @(if (send s online?) (length (send s get-devices)) "OFFLINE")</td>
 </tr>
 }
 

@@ -227,7 +227,7 @@
             (let ((string (bytevector->string 
                            return-frame 
                            package-recieved-data-offset 
-                           (- (bytevector-length return-frame) package-recieved-end-length))))
+                           (- (bytevector-length return-frame) package-recieved-end-length 1))))
               (search-dev string SUPPORTED-DEVICES))
             (error "Error searching device type")))
       (device-slip

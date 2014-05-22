@@ -29,6 +29,13 @@
      steward-wrapper~
      (is-stored?~ #f))
     
+    ;TODO
+    (define/private (serialize-com-adr com-adr)
+      #t)
+    
+    (define/private (deserialize-com-adr com-adr)
+      #t)
+    
     (define/public (is-already-stored?)
       is-stored?~)
     
@@ -50,7 +57,7 @@
            "WHERE device_id='" id~ "'")
           (string-append
            "INSERT INTO Device (device_id, type, communication_address, steward_id) VALUES ('"
-           id~ "', '" type~ "', '" com-adr~ "', " (get-field id~ steward-wrapper~) ")"))) 
+           id~ "', '" (symbol->string type~) "', '" com-adr~ "', " (get-field steward-id~ steward-wrapper~) ")"))) 
            
     
     (define/public (get-sql)

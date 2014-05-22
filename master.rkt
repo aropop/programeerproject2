@@ -32,9 +32,7 @@
       [data-thread~ 'uninitialised]
       [save-thread~ 'uninitialised]
       
-      [last-saved~ (current-milliseconds)]
-      
-      )
+      [last-saved~ (current-milliseconds)])
     
     ;loads everything in place 
     (define/public (init)
@@ -63,10 +61,7 @@
                                               (get-field save-interval SETTINGS))
                                            (begin (save)
                                                   (loop))
-                                           (loop))))))
-        
-        )
-      )
+                                           (loop))))))))
     
     
     ;sends the message directely to the device 
@@ -78,6 +73,7 @@
     (define/public (get-stewards)
       stewards~)
     
+    ;Adds a new steward
     (define/public (add-steward ip port place)
       (define stew (new steward-wrapper%
                         [ip~ ip]
@@ -112,11 +108,15 @@
     (define/private (save)
       ;do save
       (map (lambda (stew)
+             ;store devices first
+             (map (lambda (dev)
+                    (send content-storer~ store dev))
+                  (send stew get-devices))
+             ;Then store steward itself
              (send content-storer~ store stew))
            stewards~)
       ;debugging
-      (display "Saved")
-      (newline)
+      (displayln "Saved")
       ;set the last save time
       (set! last-saved~ (current-milliseconds)))
     
@@ -130,34 +130,34 @@
         [(eq? fact 'amount-devices)
          (accumulate
           (lambda (steward numbr)
-            (+ (length
-                (send steward get-devices))
+            (+ (if (send steward online?)
+                   (length
+                    (send steward get-devices))
+                   0)
                numbr))
           0
           (get-stewards))]
         [(eq? fact 'amount-stewards)
          (length (get-stewards))]))
-           
+    
     
     ;Procedure that will be executed to collect data
     (define/private (collect-data)
       (define pars (new parser%))
-      (let ([message (new generic-data% [name 'GET] [value 'ALL])])
-        ;iterate
-        (map
-         (lambda (steward)
-           (map
-            (lambda (list-of-responses-of-one-device)
-              (map
-               (lambda (parsed-message)
-                 (send content-storer~ store parsed-message))
-               list-of-responses-of-one-device))
-            (send steward message-all-devices message)))
-         stewards~)
-        ;debugging
-        (display "Collected data on ")
-        (display (current-milliseconds))
-        (newline)))
+      ;iterate
+      ;(map
+      ; (lambda (steward)
+      ;   (map
+      ;    (lambda (list-of-responses-of-one-device)
+      ;      (map
+      ;       (lambda (parsed-message)
+      ;         (send content-storer~ store parsed-message))
+      ;       list-of-responses-of-one-device))
+      ;    (send steward message-all-devices)))
+      ; stewards~)
+      ;debugging
+      (display "Collected data on ")
+      (displayln (current-milliseconds)))
     
     ;procedure that dispatches the calls for data from a front end
     (define/public (get-data which . options)

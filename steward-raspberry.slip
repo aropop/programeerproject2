@@ -2,7 +2,8 @@
 ;|
 ;|    Steward.rkt 
 ;|    Arno De Witte - Programmeerproject 2
-;|    Code that runs on the raspberry
+;|    Code that runs on the raspberry (this is a simulated version
+;|    that wil run on any racket device)
 ;|
 ;---------------------------------------------------------------------
 
@@ -13,12 +14,22 @@
    (vector 'plug "PID=ZBS-110" "Plug")
    (vector 'multiSensor "PID=ZBS-121" "MultiSensor")))
 
-(define (steward% devices id place port)
+(define package-recieved-code 144)
+(define package-recieved-data-offset 12)
+(define package-recieved-end-length 2)
+(define package-transmit-info-code 139)
+(define package-transmit-succes 0)
+(define package-transmit-offset 4)
+(define get-type-string "DEV PID")
+
+
+(define (steward% id port)
   (let 
-    ;public
-      ((devices~ devices)
+      
+      ;public
+      ((devices~ '())
        (steward-id~ id)
-       (place~ place)
+       (place~ "none")
        ;private
        (xbee (xbee-init "/dev/ttyUSB0" 9600)))  
     
@@ -78,6 +89,11 @@
           (error "This object already has an id")
           (set! steward-id~ id)))
     
+    ;Raspberry does not know wherer it is
+    (define (set-place! new-place)
+      (set! place~ new-place)
+      place~)
+    
     ;Converts a byte vector to a vector with hexadecimal strings
     (define (byte-vector->hex-vector byte-vector)
       (define l (bytevector-length byte-vector))
@@ -106,17 +122,17 @@
                  (cond ;String might be too big
                    ((null? fromTo) 0)
                    ((null? (cdr fromTo)) (car fromTo))
-                   (els (+ (car fromTo) (cadr fromTo))))))
+                   (else (+ (car fromTo) (- (bytevector-length byte-vector) (cadr fromTo)))))))
       (define (lp idx str-idx str)
         (if (or
-             (>= idx l)
+             (>= str-idx l)
              (and 
               (= (length fromTo) 2)
               (>= idx (cadr fromTo))))
             str
             (begin
               (string-set! str str-idx (integer->char (bytevector-ref byte-vector idx)))
-              (lp (+ idx 1) (+ str-idx) str))))
+              (lp (+ idx 1) (+ str-idx 1) str))))
       (if (>= (length fromTo) 2)
           (lp (car fromTo) 0 (make-string l))
           (lp 0 0 (make-string l))))
@@ -142,7 +158,8 @@
       (define dev (get-device device-id))
       (define message-bytes (list->vector (map char->integer (string->list mes))))
       (let ((frame (send-bytes-to-device message-bytes (dev 'get-address))))
-        (bytevector->string frame 12 (- (bytevector-length frame) 2))))
+        (bytevector->string frame package-recieved-data-offset (- (bytevector-length frame) 
+                                                                  package-recieved-end-length))))
     
     ;Sends the actual data
     (define (send-bytes-to-device bytes adr)
@@ -161,16 +178,27 @@
       (define (read-loop idx)
         (let ((current-frame (if (= idx 0) '() (xbee-read xbee))))
           (cond
+            ;No more frames
             ((= 0 idx) 
              (error "Could not find suitable message"))
+            ;Frame is a recieved package
             ((and
-              (= (frame-type current-frame) 144)
+              (= (frame-type current-frame) package-recieved-code)
+              (bytevector-equal? (frame-address current-frame) adr))
+             (display "Got frame, message: ") 
+             (displayln (bytevector->string current-frame package-recieved-data-offset))
+             current-frame)
+            ;Frame is a succesfull set
+            ((and
+              (= (frame-type current-frame) package-recieved-code)
               (bytevector-equal? (frame-address current-frame) adr))
              current-frame)
-            ((and 
-              (= (frame-type current-frame) 139))
-             (displayln "Transmitting succesfull")
-             current-frame)
+            ;Transmit info package
+            ((= (frame-type current-frame) package-transmit-info-code)
+             (if (= (bytevector-ref current-frame package-transmit-offset) package-transmit-succes)
+                 (displayln "Transmitting succesfull")
+                 (error "Error Transmitting:" (bytevector-ref current-frame package-transmit-offset)))
+             (read-loop (+ idx 1))) 
             (else ;Unknown message type
              (read-loop (+ idx 1))))))
       (xbee-write xbee adr bytes)
@@ -186,19 +214,21 @@
                  (vector-ref (car lst) 0))
                 (else
                  (search-dev str (cdr lst)))))
-        (define get-bytes (list->bytevector (map char->integer (string->list "DEV PID"))))
+        (define get-bytes (list->bytevector (map char->integer (string->list get-type-string))))
         (define return-frame (send-bytes-to-device get-bytes (cadr xbee-node)))
         (if (bytevector? return-frame)
-            (let ((string (bytevector->string return-frame 12)))
+            (let ((string (bytevector->string 
+                           return-frame 
+                           package-recieved-data-offset 
+                           (- (bytevector-length return-frame) package-recieved-end-length 1))))
               (search-dev string SUPPORTED-DEVICES))
             (error "Error searching device type")))
       (device-slip
        (car xbee-node)
        (cadr xbee-node)
-       "ser does not matter"
        place~
-       "name"
        (get-device-type)))
+    
     
     (define (dispatch mes . args)
       (cond 
@@ -207,7 +237,8 @@
         ((eq? mes 'add-device) (apply add-device (car args)))
         ((eq? mes 'send-message-to-device) (apply send-message-to-device (car args)))
         ((eq? mes 'get-device-list) (get-device-list))
-        ((eq? mes 'set-id!) (apply set-id! args))
+        ((eq? mes 'set-id!) (apply set-id! (car args)))
+        ((eq? mes 'set-place) (apply set-place! (car args)))
         (else (displayln mes) 
               '(Unknown Message))))
     
@@ -241,5 +272,3 @@
       (xbee-discover xbee)
       
       (loop in out xbee))))
-
-(define steward (steward% (list (device-slip 1 2 3 4 5 'switch)) 3 "Kamer Arno" 12345))

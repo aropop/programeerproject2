@@ -31,29 +31,43 @@
     
     (define*
       [input-port~ '()]
-      [output-port~ '()])
+      [output-port~ '()]
+      [status~ 'offline])
     
     ;private functions
     (define/private (send-to-pi mes)
-      (if (null? input-port~)
-          (begin 
-            (connect-to-pi)
-            (send-to-pi mes))
-          (begin
-            (write mes output-port~)
-            (newline output-port~)
-            (flush-output output-port~)
-            (read input-port~))))
+      (cond
+        [(not (online?))
+         (connect-to-pi)
+         (if (not (online?))
+             '()
+             (send-to-pi mes))]
+        [(null? input-port~)
+         
+         (connect-to-pi)
+         (send-to-pi mes)]
+        [else
+         (write mes output-port~)
+         (newline output-port~)
+         (flush-output output-port~)
+         (read input-port~)]))
     
     (define/private (connect-to-pi)
       ;with-handlers is try in scheme
       (with-handlers ((exn:fail:network? (lambda (exn) 
-                                           (error "Could not connect to steward at " 
-                                                  ip~ ":" port~ ", probaly offline")
-                                           #f)))
+                                           (display "Steward @")
+                                           (display ip~)
+                                           (display ":")
+                                           (display port~)
+                                           (displayln " is offline")
+                                           (set! status~ 'offline))))
         (let-values (((i o) (tcp-connect ip~ port~)))
           (set! input-port~ i)
-          (set! output-port~ o))))
+          (set! output-port~ o)
+          (set! status~ 'online))))
+    
+    (define/public (online?)
+      (eq? 'online status~))
     
     ;Public interface
     ;Returns only info about these devices
@@ -83,9 +97,6 @@
          (get-device-status (get-field id~ device)))
        devices~))
     
-    ;Make some functions local for performance
-    (define/public (get-type)
-      'steward)
     
     (define/public (is-already-stored?)
       (> steward-id~ 0))
@@ -112,9 +123,11 @@
              ;build the query to store the steward
              (let ([query (string-append
                            "INSERT INTO Steward (room_name, ip, port) VALUES ('"
-                           place~ "', '" ip~"', " (number->string port~) ")")])
+                           place~ "', '" ip~"', " (number->string port~) ")")]
+                   [update-lambda (lambda (new-id)
+                                    (set! steward-id~ new-id))])
                ;return query
-               query)]))
+               (cons query update-lambda))]))
     
     ;Makes a steward-wrapper object
     (define/public (create-lambda)

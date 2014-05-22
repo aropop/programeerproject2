@@ -32,7 +32,7 @@ document.addDeviceForm.deviceSerialNumberInput.value = document.getElementById("
 <td>@(get-field type~ d)</td>
 <td>@(get-field place~ d)</td>
 <td>@(send d get-com-adr-as-string)</td>
-<td>@(send s get-device-status (get-field id~ d))</td>
+<td>@(if (send s online?) (send s get-device-status (get-field id~ d)) "OFFLINE")</td>
 </tr>
 }
 }

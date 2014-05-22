@@ -52,16 +52,15 @@
          [heading (render-heading-template)]
          [message message]
          ;in here the actual content should be stored
-         [inside-main 'temp]
-         )
+         [inside-main 'temp])
         (cond
           ;stewards page
           [(equal? page "stewards")
            (let* ([rooms (send master~ get-all-rooms)]
                   [stewards  (send master~ get-stewards)])
              (set! inside-main (include-template "templates/steward-table.html"))
-             )
-           ]
+             inside-main)]
+          
           ;devices page
           [(equal? page "devices")
            (let* ([stewards  (send master~ get-stewards)]
@@ -77,6 +76,8 @@
                    [port (extract-binding/single 'stewardport bindings)]
                    [ip (extract-binding/single 'stewardip bindings)])
                (send master~ add-steward ip (string->number port) place)
+               (set!
+                inside-main
                (get-inside-main-loop "stewards"
                                      head
                                      heading
@@ -85,7 +86,7 @@
                                                     ":"
                                                     port
                                                     "'") 
-                                     inside-main))]
+                                     inside-main)))]
           
           [(equal? page "data")
            (let* ([room_tuple (map 
@@ -115,18 +116,16 @@
           
           ;standard page
           [else
-           (set! inside-main "Welkom<br>Features to add: <ul><li>Device delete</li><li>graphs</li><li>Better interface</li></ul>")
-           ]
-          )
+           (set! inside-main 
+                 "Welkom<br>Features to add: <ul><li>Device delete</li><li>graphs</li><li>Better interface</li></ul>")])
+        
         (let* ((main (include-template "templates/main.html"))
                (body (include-template "templates/body.html")))
           (response/full
            200 #"Okay"
            (current-seconds) TEXT/HTML-MIME-TYPE
            empty
-           (list (string->bytes/utf-8 (include-template "templates/home.html")))))
-        )
-      )
+           (list (string->bytes/utf-8 (include-template "templates/home.html")))))))
     
     (define/private (render-head-template)
       (let (
@@ -135,11 +134,8 @@
             [stylesheets '("/style.css")];must be in the same directory
             [favicon "/images/favicon.png"]
             [author (get-field author SETTINGS)]
-            [description (list "Home " "Automation " "System " "beschrijving")]
-            )
-        (include-template "templates/head.html")
-        )
-      )
+            [description (list "Home " "Automation " "System " "beschrijving")])
+        (include-template "templates/head.html")))
     
     (define/private (render-heading-template)
       (let (
