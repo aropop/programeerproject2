@@ -26,13 +26,12 @@
      (master~ 'none)
      (devices~ '())
      (place~ "nowhere")
-     (port~ 0))
+     (port~ 0)
+     (steward-id~ -1))
     
     (define*
       [input-port~ '()]
-      [output-port~ '()]
-      [steward-id~ -1]
-      )
+      [output-port~ '()])
     
     ;private functions
     (define/private (send-to-pi mes)
@@ -75,7 +74,7 @@
     (define/public (get-device-type device-id)
       (send-to-pi `(get-device-type ,device-id)))
     
-    (define/public (get-device-status device-id)
+    (define/public (get-device-status device-id) ;TODO:parse data
       (send-to-pi `(send-message-to-device ,device-id "GET")))
     
     ;Make some functions local for performance
@@ -122,6 +121,10 @@
              [steward-id~ id])))
     
     (define/public (get-sql)
-      "SELECT steward_id, room_name, ip, port FROM Steward")))
+      "SELECT steward_id, room_name, ip, port FROM Steward")
+    
+    ;initialisation
+    (when (not (equal? ip~ "static"))
+      (send-to-pi `(set-place ,place~)))))
 
-(define steward-wrapper$ (new steward-wrapper%))
+(define steward-wrapper$ (new steward-wrapper% [ip~ "static"]))

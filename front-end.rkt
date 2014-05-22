@@ -67,9 +67,25 @@
            (let* ([stewards  (send master~ get-stewards)]
                   [devices 
                    (map (lambda (steward)
-                          (cons steward (send steward get-device-list)))
+                          (cons steward (send steward get-devices)))
                         stewards)])
              (set! inside-main (include-template "templates/devices.html")))]
+          
+          [(equal? page "handleAddSteward")
+             (let* ([bindings (request-bindings requests)]
+                   [place (extract-binding/single 'stewardplace bindings)]
+                   [port (extract-binding/single 'stewardport bindings)]
+                   [ip (extract-binding/single 'stewardip bindings)])
+               (send master~ add-steward ip (string->number port) place)
+               (get-inside-main-loop "stewards"
+                                     head
+                                     heading
+                                     (string-append "Succesfully added steward on ip: '" 
+                                                    ip
+                                                    ":"
+                                                    port
+                                                    "'") 
+                                     inside-main))]
           
           [(equal? page "data")
            (let* ([room_tuple (map 

@@ -1,16 +1,17 @@
 <script type="text/javascript">
 function setEqual(){
 /* Sets the values of the last row equal to the hidden form */
-var ip = document.getElementById("stewardIp").value;
-var port = parseInt(document.getElementById("stewardPort").value);
-var place = document.getElementById("stewardPlace").value;
+var ip = document.getElementById("stewardIpInput").value;
+var port = parseInt(document.getElementById("stewardPortInput").value);
+var place = document.getElementById("stewardPlaceInput").value;
 
- if ((/^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/.test(myForm.emailAddr.value))){
-alert("Please fill in the ip correctly")} 
+ if (!(/^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/.test(ip))){
+alert("Please fill in the ip correctly");
+} 
 
-document.addDeviceForm.stewardIpInput.value = ip;
-document.addDeviceForm.stewardPortInput.value = port;
-document.addDeviceForm.stewardPlaceInput.value = place;
+document.addDeviceForm.stewardIp.value = ip;
+document.addDeviceForm.stewardPort.value = port;
+document.addDeviceForm.stewardPlace.value = place;
 document.addDeviceForm.submit();
 }
 
@@ -31,7 +32,7 @@ document.addDeviceForm.submit();
 <td> @(get-field ip~ s) </td>
 <td> @(get-field port~ s) </td>
 <td> @(get-field place~ s) </td>
-<td> @(length (send s get-device-list)) </td>
+<td> @(length (send s get-devices)) </td>
 </tr>
 }
 

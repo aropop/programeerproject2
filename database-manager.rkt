@@ -51,9 +51,16 @@ communication_address VARCHAR(50) NOT NULL,
 steward_id INT REFERENCES Steward(steward_id) ON UPDATE RESTRICT ON DELETE CASCADE
 );" 
         (when (not (null? (get-field standard-rooms SETTINGS)))
-            (let ((room-query "INSERT INTO Room (room_name) VALUES "))
-              (for-each (lambda (room) (string-append room-query " ('" room "') ")))
-              room-query)))])
+          (let ((room-query "INSERT INTO Room")
+                (bool #t))
+            (for-each (lambda (room) 
+                        (if bool
+                            (begin 
+                              (set! bool #f)
+                              (set! room-query (string-append room-query " SELECT '" room "' AS name ")))
+                            (set! room-query (string-append room-query  "UNION SELECT ('" room "') ")))) 
+                      (get-field standard-rooms SETTINGS))
+            (string-append (substring room-query 0 (- (string-length room-query) 1)) ";"))))])
     
     ;Insert, delet and update queries
     (define/public (execute/no-return sql)

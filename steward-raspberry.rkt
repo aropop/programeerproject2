@@ -25,17 +25,17 @@
 (define package-recieved-data-offset 12)
 (define package-transmit-info-code 139)
 (define package-transmit-succes 0)
-(define package-transmit-offset 5)
+(define package-transmit-offset 4)
 (define get-type-string "DEV PID")
 
 
-(define (steward% devices id place port)
+(define (steward% id port)
   (let 
       
       ;public
-      ((devices~ devices)
+      ((devices~ '())
        (steward-id~ id)
-       (place~ place)
+       (place~ "none")
        ;private
        (xbee (xbee-init "/dev/ttyUSB0" 9600)))  
     
@@ -95,6 +95,11 @@
           (error "This object already has an id")
           (set! steward-id~ id)))
     
+    ;Raspberry does not know wherer it is
+    (define (set-place! new-place)
+      (set! place~ new-place)
+      place~)
+    
     ;Converts a byte vector to a vector with hexadecimal strings
     (define (byte-vector->hex-vector byte-vector)
       (define l (bytevector-length byte-vector))
@@ -123,17 +128,17 @@
                  (cond ;String might be too big
                    ((null? fromTo) 0)
                    ((null? (cdr fromTo)) (car fromTo))
-                   (else (+ (car fromTo) (cadr fromTo))))))
+                   (else (+ (car fromTo) (- (bytevector-length byte-vector) (cadr fromTo)))))))
       (define (lp idx str-idx str)
         (if (or
-             (>= idx l)
+             (>= str-idx l)
              (and 
               (= (length fromTo) 2)
               (>= idx (cadr fromTo))))
             str
             (begin
               (string-set! str str-idx (integer->char (bytevector-ref byte-vector idx)))
-              (lp (+ idx 1) (+ str-idx) str))))
+              (lp (+ idx 1) (+ str-idx 1) str))))
       (if (>= (length fromTo) 2)
           (lp (car fromTo) 0 (make-string l))
           (lp 0 0 (make-string l))))
@@ -185,6 +190,7 @@
             ((and
               (= (frame-type current-frame) package-recieved-code)
               (bytevector-equal? (frame-address current-frame) adr))
+             (display "Got frame, message: ") (displayln (bytevector->string current-frame 12))
              current-frame)
             ;Frame is a succesfull set
             ((and
@@ -195,7 +201,7 @@
             ((= (frame-type current-frame) package-transmit-info-code)
              (if (= (bytevector-ref current-frame package-transmit-offset) package-transmit-succes)
                  (displayln "Transmitting succesfull")
-                 (displayln "Error Transmitting"))
+                 (error "Error Transmitting:" (bytevector-ref current-frame package-transmit-offset)))
              (read-loop (+ idx 1))) 
             (else ;Unknown message type
              (read-loop (+ idx 1))))))
@@ -215,16 +221,18 @@
         (define get-bytes (list->bytevector (map char->integer (string->list get-type-string))))
         (define return-frame (send-bytes-to-device get-bytes (cadr xbee-node)))
         (if (bytevector? return-frame)
-            (let ((string (bytevector->string return-frame package-recieved-data-offset)))
+            (let ((string (bytevector->string 
+                           return-frame 
+                           package-recieved-data-offset 
+                           (- (bytevector-length return-frame) 2))))
               (search-dev string SUPPORTED-DEVICES))
             (error "Error searching device type")))
       (device-slip
        (car xbee-node)
        (cadr xbee-node)
-       "ser does not matter"
        place~
-       "name"
        (get-device-type)))
+    
     
     (define (dispatch mes . args)
       (cond 
@@ -233,7 +241,8 @@
         ((eq? mes 'add-device) (apply add-device (car args)))
         ((eq? mes 'send-message-to-device) (apply send-message-to-device (car args)))
         ((eq? mes 'get-device-list) (get-device-list))
-        ((eq? mes 'set-id!) (apply set-id! args))
+        ((eq? mes 'set-id!) (apply set-id! (car args)))
+        ((eq? mes 'set-place) (apply set-place! (car args)))
         (else (displayln mes) 
               '(Unknown Message))))
     
@@ -267,5 +276,3 @@
       (xbee-discover-nodes xbee)
       
       (loop in out xbee))))
-
-(define steward (steward% (list (device-slip 1 2 3 4 5 'switch)) 3 "Kamer Arno" 1234))

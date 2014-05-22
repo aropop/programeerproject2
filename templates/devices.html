@@ -19,20 +19,20 @@ document.addDeviceForm.deviceSerialNumberInput.value = document.getElementById("
 <p id="description">Devices in the system</p>
 <table>
 <tr>
-<th>Name </th>
+<th>ID</th>
 <th>Type</th>
 <th>Room</th>
 <th>Communication Address</th>
 <th>Status</th>
 </tr>
 @in[s stewards]{
-@in[d (send s get-device-list)]{
+@in[d (send s get-devices)]{
 <tr>
-<td>@(get-field name~ d)</td>
-<td>@(send d get-device-type)</td>
+<td>@(get-field id~ d)</td>
+<td>@(get-field type~ d)</td>
 <td>@(get-field place~ d)</td>
-<td>@(get-field communication-address~ d)</td>
-<td>@(get-field value~ (send s get-device-status (get-field device-id~ d)))</td>
+<td>@(send d get-com-adr-as-string)</td>
+<td>@(send s get-device-status (get-field id~ d))</td>
 </tr>
 }
 }

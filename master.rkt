@@ -15,6 +15,7 @@
          "macros.rkt"
          "database-manager.rkt"
          "parser.rkt"
+         "steward-wraper.rkt"
          "generic-data.rkt"
          "settings.rkt")
 (provide master%)
@@ -77,6 +78,16 @@
     (define/public (get-stewards)
       stewards~)
     
+    (define/public (add-steward ip port place)
+      (define stew (new steward-wrapper%
+                        [ip~ ip]
+                        [port~ port]
+                        [place~ place]
+                        [master~ this]))
+      (set! stewards~ (cons stew stewards~))
+      ;(save)
+      stew)
+    
     ;Returns a list with all the rooms in the system
     (define/public (get-all-rooms)
       (send content-provider~ get-rooms))
@@ -120,7 +131,7 @@
          (accumulate
           (lambda (steward numbr)
             (+ (length
-                (send steward get-device-list))
+                (send steward get-devices))
                numbr))
           0
           (get-stewards))]

@@ -4,7 +4,9 @@
 ;|
 ;|    Device.rkt 
 ;|    Arno De Witte - Programmeerproject 2
-;|    Abstraction and simulation of the physical devices and sensors
+;|    Data storing object, all the magic happens in steward, this is
+;|    just used so we can easily print and list devices without 
+;|    connecting to the steward
 ;|
 ;---------------------------------------------------------------------
 
@@ -30,6 +32,16 @@
     (define/public (is-already-stored?)
       is-stored?~)
     
+    ;For printing in front-end
+    (define/public (get-com-adr-as-string)
+      (let lp
+        ((string (make-string (vector-length com-adr~)))
+         (idx 0))
+        (if (>= idx (vector-length com-adr~))
+            string
+            (begin
+              (string-set! string idx (integer->char (vector-ref com-adr~ idx)))
+              (lp string (+ idx 1))))))
     
     (define/public (store-sql)
       (if (is-already-stored?)

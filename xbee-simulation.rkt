@@ -28,8 +28,8 @@
 
 (define SIM-DEVICES 
   (list
-   (device-slip "ABCDEFGH" (vector 0 0 0 0 0 0 0 0) "addr" "Kitchen" "Kitchen sensor" 'multiSensor)
-   (device-slip "IJKLMNOP" (vector 0 0 0 0 0 0 0 1) "addr" "KidsRoom" "kids room lights" 'plug)))
+   (device-slip "ABCDEFGH" (vector 0 0 0 0 0 0 0 0) "Kitchen" 'multiSensor)
+   (device-slip "IJKLMNOP" (vector 0 0 0 0 0 0 0 1) "KidsRoom"  'plug)))
 
 (define DEVICE2-STATE 'on)
 
@@ -216,7 +216,7 @@
   (set! ANSWERS (cons 
                  TRANSMIT-MESSAGE
                  (cons 
-                 (get-ans MESSAGES) ANSWERS)))
+                 (get-ans MESSAGES) ANSWERS))))
 
 (define (xbee-initialise ign ore)
   SIM-DEVICES)
