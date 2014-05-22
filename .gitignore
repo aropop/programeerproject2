@@ -2,6 +2,7 @@
 #*#.*
 compiled/
 Opdrachten/
+examples/
 *.html~
 *.slip~
 *.aux
