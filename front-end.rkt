@@ -112,6 +112,14 @@
                 [data-t (send steward get-device-status device-id)])
              (set! data data-t))]
           
+          [(equal? page "getStewardDevices")
+           (set! answer-type 'simple-data)
+           (let* 
+               ([s-id (extract-binding/single 'id (request-bindings requests))]
+                [steward (send master~ get-steward s-id)]
+                [data-t (send steward get-devices-count)])
+             (set! data data-t))]
+          
           [(equal? page "data_whole_system") ; bug with minute data of diffrent hours is shown
            (let* ([unparsed-data (send master~ get-data 'all)]
                   [current-time-diff (string->symbol (extract-binding/single 'time_diff (request-bindings requests)))]

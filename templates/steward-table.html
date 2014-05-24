@@ -37,7 +37,7 @@ document.addDeviceForm.submit();
 <td> @(get-field ip~ s) </td>
 <td> @(get-field port~ s) </td>
 <td> @(get-field place~ s) </td>
-<td> @(if (send s online?) (length (send s get-devices)) "OFFLINE")</td>
+<td><div id="@(get-field steward-id~ s)" class="ToEdit"> @(if (send s online?) (send s get-devices-count) "OFFLINE")</div></td>
 </tr>
 }
 
@@ -73,3 +73,17 @@ equal to those in the visible ones -->
 </td> 
 </tr>
 </table>
+
+<script type="text/javascript">
+function getter(){
+var a = $(".ToEdit").toArray();
+a.forEach(function(i) {
+      var stewardId = i.getAttribute('id');
+    jQuery.get("?page=getStewardDevices&id=" + stewardId, function(data, status){
+                              i.innerHTML = data;
+      });
+});
+}
+
+setInterval(getter, 1000);
+</script>

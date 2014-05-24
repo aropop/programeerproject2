@@ -34,7 +34,8 @@
       [input-port~ '()]
       [output-port~ '()]
       [status~ 'offline]
-      [communication-lock~ #f])
+      [communication-lock~ #f]
+      [searched-for-devices-once #f])
     
     ;private functions
     (define/private (send-to-pi mes)
@@ -97,6 +98,16 @@
     (define/public (get-devices)
       devices~)
     
+    ;For front end displaying
+    (define/public (get-devices-count)
+      (cond
+        [searched-for-devices-once
+          (length devices~)]
+        [(online?)
+          "Searching.."]
+        [else 
+         "OFFLINE"]))
+    
     ;Will ask the new devices from the 
     (define/public (get-devices-force-discovery)
       (define (device-vector->device-obj vect)
@@ -110,6 +121,7 @@
                  [steward-wrapper~ this])))
       (when (online?)
         (set! devices~ (map device-vector->device-obj (send-to-pi '(get-device-list)))))
+      (set! searched-for-devices-once #t)
       devices~)
     
     (define/public (send-message-to-device device-id mes)
