@@ -13,6 +13,7 @@
 (require "macros.rkt"
          "device.rkt"
          "database-saveable.rkt"
+         "settings.rkt"
          racket/tcp)
 
 (provide steward-wrapper% steward-wrapper$)
@@ -32,7 +33,8 @@
     (define*
       [input-port~ '()]
       [output-port~ '()]
-      [status~ 'offline])
+      [status~ 'offline]
+      [communication-lock~ #f])
     
     ;private functions
     (define/private (send-to-pi mes)
@@ -40,17 +42,22 @@
         [(not (online?))
          (connect-to-pi)
          (if (not (online?))
-             '()
+             '("OFFLINE")
              (send-to-pi mes))]
         [(null? input-port~)
-         
          (connect-to-pi)
          (send-to-pi mes)]
+        ;Make sure an other thread isn't sending, scheduling will switch sometime so no deadlocks
+        [communication-lock~
+         (send-to-pi mes)]
         [else
+         (set! communication-lock~ #t)
          (write mes output-port~)
          (newline output-port~)
          (flush-output output-port~)
-         (read input-port~)]))
+         (let ((ret (read input-port~)))
+           (set! communication-lock~ #f)
+           ret)]))
     
     (define/private (connect-to-pi)
       ;with-handlers is try in scheme
@@ -66,12 +73,18 @@
           (set! output-port~ o)
           (set! status~ 'online))))
     
+    ;Public interface
+    
+    ;Tells if the actual pi is online
     (define/public (online?)
       (eq? 'online status~))
     
-    ;Public interface
     ;Returns only info about these devices
     (define/public (get-devices)
+      devices~)
+    
+    ;Will ask the new devices from the 
+    (define/public (get-devices-force-discovery)
       (define (device-vector->device-obj vect)
         (new device-wrapper%
              [place~ (vector-ref vect 3)]
@@ -79,23 +92,30 @@
              [id~ (vector-ref vect 1)]
              [type~ (vector-ref vect 4)]
              [steward-wrapper~ this]))
-      (set! devices~ (map device-vector->device-obj (send-to-pi '(get-device-list))))
+      (if (online?)
+          (set! devices~ (map device-vector->device-obj (send-to-pi '(get-device-list))))
+          (set! devices~ '()))
       devices~)
     
     (define/public (send-message-to-device device-id mes)
       (send-to-pi `(send-message-to-device ,device-id ,mes)))
     
     (define/public (get-device-type device-id)
-      (send-to-pi `(get-device-type ,device-id)))
+      (let 
+          ((type (filter-map (lambda (device)
+                               (and
+                                (equal? device-id (get-field id~ device))
+                                (get-field type~ device)))
+                             devices~)))
+        (if (null? type)
+            (error "No device for id: " device-id)
+            (car type))))
     
-    (define/public (get-device-status device-id) ;TODO:parse data
+    (define/public (get-device-status device-id) ;TODO:parse data & threading
       (send-to-pi `(send-message-to-device ,device-id "GET")))
     
-    (define/public (message-all-devices)
-      (map
-       (lambda (device)
-         (get-device-status (get-field id~ device)))
-       devices~))
+    (define/public (message-all-devices mes)
+      (send-to-pi `(send-message-to-all-devices ,mes)))
     
     
     (define/public (is-already-stored?)
@@ -103,29 +123,43 @@
     
     
     (define/public (has-device device-id)
-      (send-to-pi `(has-device ,device-id)))
+      (let 
+          ((lst (filter-map (lambda (device)
+                              (equal? device-id (get-field id~ device)))
+                            devices~)))
+        (null? lst)))
     
     (define/public (set-id! id)
       (cond [(not (is-already-stored?))
              (set! steward-id~ id)
              (send-to-pi `(set-id! ,id))]))
     
+    ;Returns a cons of a lambda to be executed after this
     (define/public (store-sql)
       (cond [(is-already-stored?) ;device is already in the database so we need to update
              (let ([query (string-append "UPDATE Steward SET "
                                          "room_name='" place~ "', "
                                          "ip='" ip~"', "
                                          "port=" (number->string port~) " "
-                                         "WHERE steward_id=" (number->string steward-id~))])
+                                         "WHERE steward_id=" (number->string steward-id~))]
+                   [update-lambda (lambda (new-id content-storer)
+                                    (map
+                                     (lambda (device)
+                                       (send content-storer store device))
+                                     devices~))])
                ;store the query
-               query)]
+               (cons query update-lambda))]
             [else ;steward is not stored already
              ;build the query to store the steward
              (let ([query (string-append
                            "INSERT INTO Steward (room_name, ip, port) VALUES ('"
                            place~ "', '" ip~"', " (number->string port~) ")")]
-                   [update-lambda (lambda (new-id)
-                                    (set! steward-id~ new-id))])
+                   [update-lambda (lambda (new-id content-storer)
+                                    (set! steward-id~ new-id)
+                                    (map
+                                     (lambda (device)
+                                       (send content-storer store device))
+                                     devices~))])
                ;return query
                (cons query update-lambda))]))
     
@@ -144,6 +178,18 @@
     
     ;initialisation
     (when (not (equal? ip~ "static"))
-      (send-to-pi `(set-place ,place~)))))
+      ;This will start a thread setting the value, it will make a connection too
+      (thread (lambda ()
+                (send-to-pi `(set-place ,place~))))
+      ;Thread will ask for the devices to the real steward
+      (thread (lambda () 
+                (define x (current-milliseconds))
+                (let loop ()
+                  (if (> (- (current-milliseconds) x) 
+                         (get-field devices-get-interval SETTINGS))
+                      (begin (get-devices-force-discovery)
+                             (set! x (current-milliseconds))
+                             (loop))
+                      (loop))))))))
 
 (define steward-wrapper$ (new steward-wrapper% [ip~ "static"]))

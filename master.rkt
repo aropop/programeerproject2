@@ -165,8 +165,4 @@
         [(eq? which 'all)
          (send content-provider~ get-all-data)]
         [else
-         (error "Cannot get-data for which is: " which)]))
-    
-    
-    )
-  )
+         (error "Cannot get-data for which is: " which)]))))

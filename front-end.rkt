@@ -52,7 +52,9 @@
          [heading (render-heading-template)]
          [message message]
          ;in here the actual content should be stored
-         [inside-main 'temp])
+         [inside-main 'temp]
+         [answer-type 'normal-html]
+         [data "niets"])
         (cond
           ;stewards page
           [(equal? page "stewards")
@@ -71,22 +73,22 @@
              (set! inside-main (include-template "templates/devices.html")))]
           
           [(equal? page "handleAddSteward")
-             (let* ([bindings (request-bindings requests)]
-                   [place (extract-binding/single 'stewardplace bindings)]
-                   [port (extract-binding/single 'stewardport bindings)]
-                   [ip (extract-binding/single 'stewardip bindings)])
-               (send master~ add-steward ip (string->number port) place)
-               (set!
-                inside-main
-               (get-inside-main-loop "stewards"
-                                     head
-                                     heading
-                                     (string-append "Succesfully added steward on ip: '" 
-                                                    ip
-                                                    ":"
-                                                    port
-                                                    "'") 
-                                     inside-main)))]
+           (let* ([bindings (request-bindings requests)]
+                  [place (extract-binding/single 'stewardplace bindings)]
+                  [port (extract-binding/single 'stewardport bindings)]
+                  [ip (extract-binding/single 'stewardip bindings)])
+             (send master~ add-steward ip (string->number port) place)
+             (set!
+              inside-main
+              (get-inside-main-loop "stewards"
+                                    head
+                                    heading
+                                    (string-append "Succesfully added steward on ip: '" 
+                                                   ip
+                                                   ":"
+                                                   port
+                                                   "'") 
+                                    inside-main)))]
           
           [(equal? page "data")
            (let* ([room_tuple (map 
@@ -101,6 +103,13 @@
                   [last_stored_data (send master~ get-facts 'last-stored-data)]
                   )
              (set! inside-main (include-template "templates/data-start.html")))]
+          
+          [(equal? page "getDeviceStatus")
+           (set! answer-type 'simple-data)
+           (let* 
+               ([steward (send master~ get-steward-for-device
+                [data (send stew)
+             (set! data)) ]
           
           [(equal? page "data_whole_system") ; bug with minute data of diffrent hours is shown
            (let* ([unparsed-data (send master~ get-data 'all)]
@@ -119,18 +128,28 @@
            (set! inside-main 
                  "Welkom<br>Features to add: <ul><li>Device delete</li><li>graphs</li><li>Better interface</li></ul>")])
         
-        (let* ((main (include-template "templates/main.html"))
-               (body (include-template "templates/body.html")))
-          (response/full
-           200 #"Okay"
-           (current-seconds) TEXT/HTML-MIME-TYPE
-           empty
-           (list (string->bytes/utf-8 (include-template "templates/home.html")))))))
+        (cond 
+          
+          [(eq? answer-type 'simple-data) 
+           (response/full
+            200 #"Okay"
+            (current-seconds) TEXT/HTML-MIME-TYPE
+            empty
+            (list (string->bytes/utf-8 data)))]
+          
+          
+          [else (let* ((main (include-template "templates/main.html"))
+                       (body (include-template "templates/body.html")))
+                  (response/full
+                   200 #"Okay"
+                   (current-seconds) TEXT/HTML-MIME-TYPE
+                   empty
+                   (list (string->bytes/utf-8 (include-template "templates/home.html")))))])))
     
     (define/private (render-head-template)
       (let (
             [title (get-field title SETTINGS)]
-            [scripts '()]
+            [scripts '("/js/jquery.min.js")]
             [stylesheets '("/style.css")];must be in the same directory
             [favicon "/images/favicon.png"]
             [author (get-field author SETTINGS)]
@@ -162,14 +181,7 @@
     
     (define/override (start)
       (serve/servlet dispatcher
-                     #:extra-files-paths (list (current-directory)
-                                              ))
-      )
-    
-    
-    
-    )
-  )
+                     #:extra-files-paths (list (current-directory))))))
 
 
 

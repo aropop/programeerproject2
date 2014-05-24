@@ -16,20 +16,22 @@
            xbee-list-nodes xbee-list
            xbee-discover-nodes xbee-discover 
            xbee-read-frame xbee-read
+           xbee-ready?
            print-frame
            list->bytevector
            make-bytevector
            bytevector-length
            bytevector-ref
            bytevector-set!
-           bytevector?)
+           bytevector?
+           clock)
 (#%require "device-r5rs.rkt")
-(#%require (only racket/base random))
+(#%require (only racket/base random current-milliseconds when))
 
 (define SIM-DEVICES 
   (list
-   (device-slip "ABCDEFGH" (vector 0 0 0 0 0 0 0 0) "Kitchen" 'multiSensor)
-   (device-slip "IJKLMNOP" (vector 0 0 0 0 0 0 0 1) "KidsRoom"  'plug)))
+   (device-slip "PID=ZBS-121V1234567867" (vector 0 0 0 0 0 0 0 0) "Kitchen" 'multiSensor)
+   (device-slip "PID=ZBS-110v2134561234" (vector 0 0 0 0 0 0 0 1) "KidsRoom"  'plug)))
 
 (define DEVICE2-STATE 'on)
 
@@ -37,25 +39,8 @@
   (list
    ;vector message-string message-bytes answer-bytes address lambda-executed-when-called
    ;Device 1 multisensor
-   (vector "DEV PID" 
-           #(68 69 86 32 80 73 68) 
-           (vector 
-            ;message type
-            144 
-            ;64 bit address
-            0 0 0 0 0 0 0 0
-            ;16 bit address
-            0 0
-            ;Recieve options 1
-            1
-            ;Data packet
-            80 73 68 61 90 66 83 45 49 50 49 10 ; PID=ZBS-121
-            ;line feeds 
-            10 10)
-           (vector 0 0 0 0 0 0 0 0)
-           (lambda (message-bytevector) #t))
    (vector "GET" 
-           #(71 69 84)
+           #(71 69 84 10)
            (vector 
             ;message type
             144 
@@ -76,27 +61,10 @@
            (vector 0 0 0 0 0 0 0 0)
            (lambda (message-bytevector) 
              (bytevector-set! message-bytevector 21 (random 10))
-             (bytevector-set! message-bytevector 21 (+ 1 (random 2)))))
+             (bytevector-set! message-bytevector 22 (+ 1 (random 2)))))
    ;Device 2 (ABCDEFGH) Plug
-   (vector "DEV PID" 
-           #(68 69 86 32 80 73 68) 
-           (vector 
-            ;message type
-            144 
-            ;64 bit address
-            0 0 0 0 0 0 0 1
-            ;16 bit address
-            0 0
-            ;Recieve options 1
-            1
-            ;Data packet
-            80 73 68 61 90 66 83 45 49 49 48 10 ; PID=ZBS-110
-            ;line feeds 
-            10 10)
-           (vector 0 0 0 0 0 0 0 1)
-           (lambda (message-bytevector) #t))
    (vector "GET" 
-           #(71 69 84)
+           #(71 69 84 10)
            (vector 
             ;message type
             144 
@@ -107,7 +75,7 @@
             ;Recieve options 1
             1
             ;Data packet
-            80 79 87 61 79 78 10 ;POW=ON
+            80 79 87 61 79 78 32 10 ;POW=ON (we cheat a little with the space)
             70 82 69 81 61 52 57 46 56 49 50 53 72 122 10 ; 
             86 82 77 83 61 50 50 55 86 10 
             73 82 77 83 61 49 57 56 56 109 65 10
@@ -116,9 +84,18 @@
             ;line feeds 
             10 10)
            (vector 0 0 0 0 0 0 0 1)
-           (lambda (message-bytevector) #t))
-   (vector "GET POW" 
-           #(71 69 84 32 80 79 87)
+           (lambda (message-bytevector) 
+             (if (eq? DEVICE2-STATE 'on)
+                 (begin
+                   (bytevector-set! message-bytevector 16 79)
+                   (bytevector-set! message-bytevector 17 78)
+                   (bytevector-set! message-bytevector 18 32))
+                 (begin
+                   (bytevector-set! message-bytevector 16 79)
+                   (bytevector-set! message-bytevector 17 70)
+                   (bytevector-set! message-bytevector 18 70)))))
+   (vector "SET POW=ON" 
+           #(83 69 84 32 80 79 87 61 79 78 10)
            (vector 
             ;message type
             144 
@@ -129,37 +106,30 @@
             ;Recieve options 1
             1
             ;Data packet
-            80 79 87 61 79 78 10 ;POW=ON
-            ;line feeds 
-            10 10)
-           (vector 0 0 0 0 0 0 0 1)
-           (lambda (message-bytevector) #t))
-   (vector "SET POW" 
-           #(71 69 84 32 80 79 87)
-           (vector 
-            ;message type
-            144 
-            ;64 bit address
-            0 0 0 0 0 0 0 1
-            ;16 bit address
-            0 0
-            ;Recieve options 1
-            1
-            ;Data packet
-            80 79 87 61 79 78 10 ;POW=ON
+            97 99 107 32 115 101 116 32 112 111 119 61 111 110 10 ;ack set pow=on
             ;line feeds 
             10 10)
            (vector 0 0 0 0 0 0 0 1)
            (lambda (message-bytevector) 
-             (if (eq? DEVICE2-STATE 'on)
-                 (begin
-                   (set! DEVICE2-STATE 'off)
-                   (bytevector-set! message-bytevector 16 79)
-                   (bytevector-set! message-bytevector 16 70))
-                 (begin
-                   (set! DEVICE2-STATE 'on)
-                   (bytevector-set! message-bytevector 16 79)
-                   (bytevector-set! message-bytevector 16 78)))))))
+             (set! DEVICE2-STATE 'on)))
+   (vector "SET POW=OFF" 
+           #(83 69 84 32 80 79 87 61 79 70 70 10)
+           (vector 
+            ;message type
+            144 
+            ;64 bit address
+            0 0 0 0 0 0 0 1
+            ;16 bit address
+            0 0
+            ;Recieve options 1
+            1
+            ;Data packet
+            97 99 107 32 115 101 116 32 112 111 119 61 111 102 102 10 ;ack set pow=off
+            ;line feeds 
+            10 10)
+           (vector 0 0 0 0 0 0 0 1)
+           (lambda (message-bytevector) 
+             (set! DEVICE2-STATE 'off)))))
 
 (define UNKNOWN-MESSAGE 
   (vector 
@@ -194,14 +164,15 @@
 
 (define (generate-answer type mes adr)
   (define (insert-address ans)
-    (vector-set! ans 1 (vector-ref adr 0))
-    (vector-set! ans 2 (vector-ref adr 1))
-    (vector-set! ans 3 (vector-ref adr 2))
-    (vector-set! ans 4 (vector-ref adr 3))
-    (vector-set! ans 5 (vector-ref adr 4))
-    (vector-set! ans 6 (vector-ref adr 5))
-    (vector-set! ans 7 (vector-ref adr 6))
-    (vector-set! ans 8 (vector-ref adr 7))
+    (when (= (vector-ref ans 0) 144)
+      (vector-set! ans 1 (vector-ref adr 0))
+      (vector-set! ans 2 (vector-ref adr 1))
+      (vector-set! ans 3 (vector-ref adr 2))
+      (vector-set! ans 4 (vector-ref adr 3))
+      (vector-set! ans 5 (vector-ref adr 4))
+      (vector-set! ans 6 (vector-ref adr 5))
+      (vector-set! ans 7 (vector-ref adr 6))
+      (vector-set! ans 8 (vector-ref adr 7)))
     ans)
   (define (get-ans lst)
     (cond
@@ -216,7 +187,7 @@
   (set! ANSWERS (cons 
                  TRANSMIT-MESSAGE
                  (cons 
-                 (get-ans MESSAGES) ANSWERS))))
+                  (get-ans MESSAGES) ANSWERS))))
 
 (define (xbee-initialise ign ore)
   SIM-DEVICES)
@@ -244,6 +215,7 @@
 (define xbee-list xbee-list-nodes)
 
 (define (xbee-read-frame xb)
+  (display ANSWERS) (newline)
   (if (null? ANSWERS)
       0
       (let ((ret (car ANSWERS)))
@@ -256,6 +228,9 @@
 
 (define xbee-discover xbee-discover-nodes)
 
+(define (xbee-ready? xbee)
+  (not (= (length ANSWERS) 0)))
+
 (define print-frame display)
 
 (define bytevector-length vector-length)
@@ -264,3 +239,6 @@
 (define list->bytevector list->vector)
 (define make-bytevector make-vector)
 (define bytevector? vector?)
+
+(define (clock)
+  (current-milliseconds))

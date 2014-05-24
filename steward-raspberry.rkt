@@ -27,7 +27,6 @@
 (define package-transmit-info-code 139)
 (define package-transmit-succes 0)
 (define package-transmit-offset 4)
-(define get-type-string "DEV PID")
 
 
 (define (steward% id port)
@@ -40,16 +39,32 @@
        ;private
        (xbee (xbee-init "/dev/ttyUSB0" 9600)))  
     
-    (define (error . mes)
-      (display mes))
     
-    (define (string->list str)
-      (define l (string-length str))
-      (define (lp i lst)
-        (if (< i 0)
-            lst
-            (lp (- i 1) (cons (string-ref str i) lst))))
-      (lp (- l 1) '()))
+    ;Help procedure to facilitate debuging
+    (define (displayln mes)
+      (display mes)
+      (newline))
+    
+    ;Displays an error (slips defines error but it's just a display of the first argument
+    (define (error . mes)
+      (map
+       display
+       mes)
+      (newline))
+ 
+    ;Sleeps for seconds
+    (define (sleep)
+      (define time (+ 3e+3 (clock))) 
+      (define (lp)
+        (if (not (>= (clock) time))
+            (lp)))
+      (lp))
+    
+    ;Sleeps till there is a message
+    (define (sleep2)
+      (if (not (xbee-ready? xbee))
+          (sleep2)))
+    
     
     ;returns the device for the given id
     (define (get-device device-id)
@@ -79,11 +94,6 @@
            devices~)
       has-device-bool)
     
-    ;returns the list of device objects
-    (define (get-device-list)
-      (map (lambda (dev)
-             (dev 'serialize))
-           devices~))
     
     ;defines if this steward is already in the database
     (define (is-already-stored?)
@@ -138,12 +148,30 @@
               (>= idx (cadr fromTo))))
             str
             (begin
-              (string-set! str str-idx (integer->char (bytevector-ref byte-vector idx)))
+              (display str-idx)(display " ") (display idx) (display " ") (displayln  str)
+              (if (= (bytevector-ref byte-vector idx) 10)
+                  (string-set! str str-idx #\,)
+                  (string-set! str str-idx (integer->char (bytevector-ref byte-vector idx))))
               (lp (+ idx 1) (+ str-idx 1) str))))
-      (if (>= (length fromTo) 2)
-          (lp (car fromTo) 0 (make-string l))
-          (lp 0 0 (make-string l))))
+      (if (>= (length fromTo) 1)
+          (lp (car fromTo) 0 (make-string l #\a))
+          (lp 0 0 (make-string l #\a))))
     
+    ;Slip has not yet implemented this procedure so we define it here
+    (define (list->bytevector list)
+      (define v (make-bytevector (+ (length list) 1)))
+      (define i 0)
+      (define (lp lst)
+        (if (null? lst)
+            v
+            (begin
+              (bytevector-set! v i (car lst))
+              (set! i (+ i 1))
+              (lp (cdr lst)))))
+      (bytevector-set! v (length list) 10)
+      (lp list))
+    
+    ;Slip has not yet implemented this procedure so we define it here
     (define (bytevector-equal? bv1 bv2)
       (define (eq-lp idx)
         (if (>= idx (bytevector-length bv1))
@@ -154,23 +182,35 @@
        (= (bytevector-length bv1) (bytevector-length bv2))
        (eq-lp 0)))
     
+        
+    ;Slip has not yet implemented this procedure so we define it here
+    (define (string->list str)
+      (define l (string-length str))
+      (define (lp i lst)
+        (if (< i 0)
+            lst
+            (lp (- i 1) (cons (string-ref str i) lst))))
+      (lp (- l 1) '()))
+    
     ;Adds a device
     ;Device should be a list whith the arguments to make an raspberry device ADT
     (define (add-device device-list)
       (let ((device (apply device-list device-slip))) 
         (set! devices~ (cons device devices~))))
     
-    ;Sends a single message to a device
-    (define (send-message-to-device device-id mes)
-      (define dev (get-device device-id))
-      (define message-bytes (list->vector (map char->integer (string->list mes))))
-      (let ((frame (send-bytes-to-device message-bytes (dev 'get-address))))
-        (bytevector->string frame package-recieved-data-offset (- (bytevector-length frame) 
-                                                                  package-recieved-end-length))))
+    ;Converts a message into a bytevector to send
+    (define (string->bytevector string)
+      (list->bytevector (map char->integer (string->list string)))) 
+    
+    (define (send-message-to-all-devices mes)
+      (map
+       (lambda (dev)
+         (send-message-to-device (dev 'get-address) mes))
+       devices~))
+    
     
     ;Sends the actual data
     (define (send-bytes-to-device bytes adr)
-      (displayln adr)
       (define (frame-type frame)
         (bytevector-ref frame 0))
       (define (frame-address frame)
@@ -182,82 +222,86 @@
                 (bytevector-set! frame-adr (- idx 1) (bytevector-ref frame idx))
                 (lp (+ idx 1)))))
         (lp 1))
-      (define (read-loop idx)
-        (let ((current-frame (if (= idx 0) '() (xbee-read xbee))))
+      (define (read-loop)
+        (sleep2)
+        (let ((current-frame  (xbee-read xbee)))
           (cond
-            ;No more frames
-            ((= 0 idx) 
-             (error "Could not find suitable message"))
             ;Frame is a recieved package
             ((and
               (= (frame-type current-frame) package-recieved-code)
               (bytevector-equal? (frame-address current-frame) adr))
              (display "Got frame, message: ") 
-             (displayln (bytevector->string current-frame package-recieved-data-offset))
-             current-frame)
-            ;Frame is a succesfull set
-            ((and
-              (= (frame-type current-frame) package-recieved-code)
-              (bytevector-equal? (frame-address current-frame) adr))
+             (displayln (bytevector->string current-frame 
+                                            package-recieved-data-offset 
+                                            (- (bytevector-length current-frame) 
+                                               package-recieved-end-length)))
              current-frame)
             ;Transmit info package
             ((= (frame-type current-frame) package-transmit-info-code)
              (if (= (bytevector-ref current-frame package-transmit-offset) package-transmit-succes)
-                 (displayln "Transmitting succesfull")
-                 (error "Error Transmitting:" (bytevector-ref current-frame package-transmit-offset)))
-             (read-loop (+ idx 1))) 
+                 (begin
+                   (displayln "Transmitting succesfull, waiting for response packet")
+                   (read-loop))
+                 (begin
+                   (displayln "Not correctly sent, retrying")
+                   (send-bytes-to-device bytes adr)))) 
             (else ;Unknown message type
-             (read-loop (+ idx 1))))))
+             (read-loop)))))
       (xbee-write xbee adr bytes)
-      (read-loop (xbee-tick xbee)))
+      (xbee-tick xbee)
+      (sleep)
+      (read-loop))
+    
+    ;Sends a single message to a device
+    (define (send-message-to-device device-id mes)
+      (define dev (get-device device-id))
+      (define message-bytes (string->bytevector mes))
+      (let ((frame (send-bytes-to-device message-bytes (dev 'get-address))))
+        (bytevector->string frame package-recieved-data-offset (- (bytevector-length frame) 
+                                                                  package-recieved-end-length))))
     
     ;Creates a device object from an xbee-node
     (define (create-device xbee-node)
-      (define (get-device-type)
-        (define (search-dev str lst)
-          (cond ((null? lst)
-                 'not-supported)
-                ((equal? str (vector-ref (car lst) 1))
-                 (vector-ref (car lst) 0))
-                (else
-                 (search-dev str (cdr lst)))))
-        (define get-bytes (list->bytevector (map char->integer (string->list get-type-string))))
-        (define return-frame (send-bytes-to-device get-bytes (cadr xbee-node)))
-        (if (bytevector? return-frame)
-            (let ((string (bytevector->string 
-                           return-frame 
-                           package-recieved-data-offset 
-                           (- (bytevector-length return-frame) package-recieved-end-length 1))))
-              (search-dev string SUPPORTED-DEVICES))
-            (error "Error searching device type")))
+      (define (get-device-type idstring)
+        (substring idstring 0 11))
       (device-slip
        (car xbee-node)
        (cadr xbee-node)
        place~
-       (get-device-type)))
+       (get-device-type (car xbee-node))))
+       
+    
+    
+    ;returns the list of device objects
+    (define (get-device-list)
+      (set! devices~ (map create-device (xbee-list)))
+      (map (lambda (dev)
+             (dev 'serialize))
+           devices~))
     
     
     (define (dispatch mes . args)
+      (set! args (car args))
       (cond 
-        ((eq? mes 'has-device) (apply has-device (car args)))
+        ((eq? mes 'has-device) (apply has-device args))
         ((eq? mes 'is-already-stored?) (is-already-stored?))
         ((eq? mes 'add-device) (apply add-device (car args)))
-        ((eq? mes 'send-message-to-device) (apply send-message-to-device (car args)))
+        ((eq? mes 'send-message-to-device) (apply send-message-to-device args))
+        ((eq? mes 'send-message-to-all-devices) (apply send-message-to-all-devices args))
         ((eq? mes 'get-device-list) (get-device-list))
         ((eq? mes 'set-id!) (apply set-id! (car args)))
-        ((eq? mes 'set-place) (apply set-place! (car args)))
+        ((eq? mes 'set-place) (apply set-place! args))
         (else (displayln mes) 
               '(Unknown Message))))
     
-    ;Help procedure to facilitate debuging
-    (define (displayln mes)
-      (display mes)
-      (newline))
+    
     
     (define (loop in out xbee)
       (let
           ((mes (read in))
            (devices (xbee-list)))
+        (xbee-tick xbee)
+        (sleep)
         (display "Device-list: ") (displayln devices)
         (set! devices~ (map create-device devices))
         (display "Got: ")(displayln mes)

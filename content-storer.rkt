@@ -49,12 +49,13 @@
                      ((possible-cons (send something store-sql)))
                    (cond [(cons? possible-cons)
                           (send database-manager~ execute/no-return (car possible-cons))
-                          ((cdr possible-cons) (send database-manager~ last-inserted-id))]
+                          ((cdr possible-cons) (send database-manager~ last-inserted-id)
+                                               this)]
                          [else
                           (send
-                  database-manager~
-                  execute/no-return
-                  possible-cons)])))])))
+                           database-manager~
+                           execute/no-return
+                           possible-cons)])))])))
     
     ;stores a generic data object
     (define/private (store-data response-message-object)

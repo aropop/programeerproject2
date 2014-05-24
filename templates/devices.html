@@ -1,21 +1,4 @@
 <!-- devices template -->
-<script type="text/javascript">
-function setEqual(){
-/* Sets the values of the last row equal to the hidden form */
-document.addDeviceForm.deviceNameInput.value = document.getElementById("deviceName").value;
-document.addDeviceForm.deviceTypeInput.value = document.getElementById("deviceType").value;
-document.addDeviceForm.deviceCommunicationAddressInput.value = document.getElementById("deviceCommunicationAddress").value;
-document.addDeviceForm.devicePlaceInput.value = document.getElementById("devicePlace").value;
-document.addDeviceForm.deviceSerialNumberInput.value = document.getElementById("deviceSerialNumber").value;
-}
-
-</script>
-<!-- Succes or fail messages -->
-@in[m message]{
-<p id="message">@|m|</p>
-}
-
-
 <p id="description">Devices in the system</p>
 <table>
 <tr>
@@ -32,10 +15,20 @@ document.addDeviceForm.deviceSerialNumberInput.value = document.getElementById("
 <td>@(get-field type~ d)</td>
 <td>@(get-field place~ d)</td>
 <td>@(send d get-com-adr-as-string)</td>
-<td>@(if (send s online?) (send s get-device-status (get-field id~ d)) "OFFLINE")</td>
+<td id=" @(get-field id~ d) " class="ToEdit">@(if (send s online?) (send s get-device-status (get-field id~ d)) "OFFLINE")</td>
 </tr>
 }
 }
 
 </table>
 
+
+<script type="text/javascript">
+
+for(var i in $(".ToEdit")){
+      var deviceId = i.getAttribute('id');
+      $.get("?page=getDeviceStatus&id=" + deviceId, function(data, status){
+                              i.innerHTML = data};)
+}
+
+</script>
