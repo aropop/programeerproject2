@@ -27,6 +27,7 @@
      com-adr~
      type~
      steward-wrapper~
+     (last-status~ "Loading...")
      (is-stored?~ #f))
     
     ;TODO
@@ -41,28 +42,30 @@
     
     ;For printing in front-end
     (define/public (get-com-adr-as-string)
+      (define string (make-string (vector-length com-adr~)))
       (let lp
-        ((string (make-string (vector-length com-adr~)))
-         (idx 0))
+        ((idx 0))
         (if (>= idx (vector-length com-adr~))
             string
             (begin
               (string-set! string idx (integer->char (vector-ref com-adr~ idx)))
-              (lp string (+ idx 1))))))
+              (lp (+ idx 1))))))
     
     (define/public (store-sql)
       (if (is-already-stored?)
           (string-append
-           "UPDATE Device SET type='" (symbol->string type~) "', communication_address='" com-adr~ "'"
+           "UPDATE Device SET type='" type~ "', communication_address='" com-adr~ "'"
            "WHERE device_id='" id~ "'")
           (string-append
            "INSERT INTO Device (device_id, type, communication_address, steward_id) VALUES ('"
-           id~ "', '" (symbol->string type~) "', '" com-adr~ "', " (get-field steward-id~ steward-wrapper~) ")"))) 
-           
+           id~ "', '" type~ "', '" com-adr~ "', " (get-field 
+                                                                    steward-id~
+                                                                    steward-wrapper~) ")"))) 
+    
     
     (define/public (get-sql)
       "SELECT device_id, communication_address, type FROM Device WHERE steward_id=")
-      
+    
     
     (define/public (create-lambda)
       (lambda (id com-adr type st place)
@@ -80,5 +83,5 @@
                              [com-adr~ "static"]
                              [type~ 'staticClass]
                              [steward-wrapper~ 0]))
-                             
+
 

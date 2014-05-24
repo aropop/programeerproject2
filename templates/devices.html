@@ -15,7 +15,7 @@
 <td>@(get-field type~ d)</td>
 <td>@(get-field place~ d)</td>
 <td>@(send d get-com-adr-as-string)</td>
-<td id=" @(get-field id~ d) " class="ToEdit">@(if (send s online?) (send s get-device-status (get-field id~ d)) "OFFLINE")</td>
+<td><div id="@(get-field id~ d)" class="ToEdit">@(if (send s online?) (send s get-device-status (get-field id~ d)) "OFFLINE")</div></td>
 </tr>
 }
 }
@@ -24,11 +24,15 @@
 
 
 <script type="text/javascript">
-
-for(var i in $(".ToEdit")){
+function getter(){
+var a = $(".ToEdit").toArray();
+a.forEach(function(i) {
       var deviceId = i.getAttribute('id');
-      $.get("?page=getDeviceStatus&id=" + deviceId, function(data, status){
-                              i.innerHTML = data};)
+    jQuery.get("?page=getDeviceStatus&id=" + deviceId, function(data, status){
+                              i.innerHTML = data;
+      });
+});
 }
 
+setInterval(getter, 1000);
 </script>

@@ -107,9 +107,10 @@
           [(equal? page "getDeviceStatus")
            (set! answer-type 'simple-data)
            (let* 
-               ([steward (send master~ get-steward-for-device
-                [data (send stew)
-             (set! data)) ]
+               ([device-id (extract-binding/single 'id (request-bindings requests))]
+                [steward (send master~ get-steward-for-device device-id)]
+                [data-t (send steward get-device-status device-id)])
+             (set! data data-t))]
           
           [(equal? page "data_whole_system") ; bug with minute data of diffrent hours is shown
            (let* ([unparsed-data (send master~ get-data 'all)]

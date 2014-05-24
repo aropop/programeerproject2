@@ -49,6 +49,8 @@
          (send-to-pi mes)]
         ;Make sure an other thread isn't sending, scheduling will switch sometime so no deadlocks
         [communication-lock~
+         (display "locked!")
+         (newline)
          (send-to-pi mes)]
         [else
          (set! communication-lock~ #t)
@@ -73,6 +75,18 @@
           (set! output-port~ o)
           (set! status~ 'online))))
     
+    (define/private (get-device device-id)
+      (let 
+          ((type (filter-map (lambda (device)
+                               (and
+                                (equal? device-id (get-field id~ device))
+                                device))
+                             devices~)))
+        (if (null? type)
+            (error "No device for id (get-device): " device-id)
+            (car type))))
+    
+    
     ;Public interface
     
     ;Tells if the actual pi is online
@@ -86,15 +100,16 @@
     ;Will ask the new devices from the 
     (define/public (get-devices-force-discovery)
       (define (device-vector->device-obj vect)
-        (new device-wrapper%
-             [place~ (vector-ref vect 3)]
-             [com-adr~ (vector-ref vect 2)]
-             [id~ (vector-ref vect 1)]
-             [type~ (vector-ref vect 4)]
-             [steward-wrapper~ this]))
-      (if (online?)
-          (set! devices~ (map device-vector->device-obj (send-to-pi '(get-device-list))))
-          (set! devices~ '()))
+        (if (has-device? (vector-ref vect 1))
+            (get-device (vector-ref vect 1)) ; Get existing device
+            (new device-wrapper%
+                 [place~ (vector-ref vect 3)]
+                 [com-adr~ (vector-ref vect 2)]
+                 [id~ (vector-ref vect 1)]
+                 [type~ (vector-ref vect 4)]
+                 [steward-wrapper~ this])))
+      (when (online?)
+        (set! devices~ (map device-vector->device-obj (send-to-pi '(get-device-list)))))
       devices~)
     
     (define/public (send-message-to-device device-id mes)
@@ -108,11 +123,22 @@
                                 (get-field type~ device)))
                              devices~)))
         (if (null? type)
-            (error "No device for id: " device-id)
+            (error "No device for id (get-device-type): " device-id)
             (car type))))
     
-    (define/public (get-device-status device-id) ;TODO:parse data & threading
-      (send-to-pi `(send-message-to-device ,device-id "GET")))
+    (define/public (get-device-status device-id)
+      (let ((type (filter-map (lambda (device)
+                                (and
+                                 (equal? device-id (get-field id~ device))
+                                 (get-field last-status~ device)))
+                              devices~)))
+        (if (null? type)
+            (error "No device for id (get-device-status): " device-id)
+            (car type))))
+    
+    (define/public (get-devices-status-force-message device-id) ;TODO parse
+      (define dev (get-device device-id))
+      (set-field! last-status~ dev (send-to-pi `(send-message-to-device ,device-id "GET"))))
     
     (define/public (message-all-devices mes)
       (send-to-pi `(send-message-to-all-devices ,mes)))
@@ -122,12 +148,13 @@
       (> steward-id~ 0))
     
     
-    (define/public (has-device device-id)
-      (let 
-          ((lst (filter-map (lambda (device)
-                              (equal? device-id (get-field id~ device)))
-                            devices~)))
-        (null? lst)))
+    (define/public (has-device? device-id)
+      (let  ((lst (filter-map (lambda (device)
+                                (and
+                                 (equal? device-id (get-field id~ device))
+                                 device))
+                              devices~)))
+        (not (null? lst))))
     
     (define/public (set-id! id)
       (cond [(not (is-already-stored?))
@@ -188,6 +215,8 @@
                   (if (> (- (current-milliseconds) x) 
                          (get-field devices-get-interval SETTINGS))
                       (begin (get-devices-force-discovery)
+                             (map (lambda (dv) (get-devices-status-force-message (get-field id~ dv)))
+                                  devices~)
                              (set! x (current-milliseconds))
                              (loop))
                       (loop))))))))
