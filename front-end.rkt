@@ -116,7 +116,7 @@
                             (send steward get-device-status device-id))])
              (if (string? data-t)
                  (set! data data-t)
-                 (set! data (foldl string-append ","
+                 (set! data (foldl (lambda (s s2) (string-append s "," s2)) ""
                                    (map 
                                     (lambda (t-d) (send t-d get-full-string))
                                     (send steward get-device-status device-id))))))]
@@ -132,7 +132,7 @@
           [(equal? page "data_whole_system") ; bug with minute data of diffrent hours is shown
            (let* ([unparsed-data (send master~ get-data 'all)]
                   [current-time-diff (string->symbol (extract-binding/single 'time_diff (request-bindings requests)))]
-                  [json-data (send (new parser%) unparse-to-json unparsed-data current-time-diff)]                  
+                  [json-data (send parser$ unparse-to-json unparsed-data current-time-diff)]                  
                   [time-diffs '((minute . "Minutes") (hour . "Hours") (day . "Days") (month . "Months") (year . "Years"))]
                   [current-page page]
                   [jquery "/js/jquery.min.js"]

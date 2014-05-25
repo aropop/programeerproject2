@@ -159,18 +159,21 @@
     
     ;Procedure that will be executed to collect data
     (define/private (collect-data)
-      (define pars (new parser%))
       ;iterate
-      ;(map
-      ; (lambda (steward)
-      ;   (map
-      ;    (lambda (list-of-responses-of-one-device)
-      ;      (map
-      ;       (lambda (parsed-message)
-      ;         (send content-storer~ store parsed-message))
-      ;       list-of-responses-of-one-device))
-      ;    (send steward message-all-devices)))
-      ; stewards~)
+      (map
+       (lambda (steward)
+         (map
+          (lambda (device)
+            (map
+             (lambda (parsed-message)
+               (send content-storer~ store parsed-message))
+             ;Status may return a string, this is the loading status for the front end
+             (let ((status-list (send steward get-device-status (get-field id~ device)))) 
+               (if (string? status-list)
+                   '()
+                   status-list))))
+          (send steward get-devices)))
+       stewards~)
       ;debugging
       (display "Collected data on ")
       (displayln (current-milliseconds)))

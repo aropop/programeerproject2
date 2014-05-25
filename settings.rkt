@@ -18,7 +18,7 @@
       [unknown-message '(Unknown Message)]
       [author "Arno De Witte"]
       [title "Control Your House"]
-      [data-get-interval 120000] ; 1000 = 1 second 
+      [data-get-interval 12000] ; 1000 = 1 second 
       [devices-get-interval 5000]
       [save-interval 180000]
       [standard-rooms '("Kitchen" "Living Room" "Bathroom")]

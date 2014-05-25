@@ -35,7 +35,8 @@
                   (lambda (2-list)
                     (new typed-data%
                          [name (list-ref 2-list 0)]
-                         [value (list-ref 2-list 1)]))
+                         [value (list-ref 2-list 1)]
+                         [device-id device-id]))
                   splitted))])))
     
     ;returns an x-expression for this specific generic-data object
