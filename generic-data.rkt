@@ -10,7 +10,7 @@
 
 
 (provide generic-data%
-         temperature-data%
+         typed-data%
          response-message%
          dated-data%)
 (define generic-data%
@@ -81,47 +81,59 @@
       (set! device-id~ id))
     
     (define/override (get-type)
-      'response-message)
+      'response-message)))
+
+;New types of data should be added here
+(define typed-data%
+  (class generic-data%
+    (inherit-field value~ name~)
+    (super-new)
+    (field 
+     (type~ ;example temperature
+      (cond
+        [(equal? (substring value~
+                            (- (string-length value~) 2)
+                            (string-length value~)) 
+                 "°C")
+         "temperature"]
+        [(equal? (substring value~
+                            (- (string-length value~) 2)
+                            (string-length value~)) 
+                 "lx")
+         "brightness"]
+        [(equal? (substring value~
+                            (- (string-length value~) 2)
+                            (string-length value~)) 
+                 "Hz")
+         "frequency"]
+        [(equal? (substring value~
+                            (- (string-length value~) 1)
+                            (string-length value~)) 
+                 "V")
+         "voltage"]
+        [(equal? (substring value~
+                            (- (string-length value~) 1)
+                            (string-length value~)) 
+                 "%")
+         "percentage"]
+        [(< (string-length value~) 3) 
+         "unkown"]
+        [(equal? (substring value~
+                            (- (string-length value~) 3)
+                            (string-length value~)) 
+                 "hPa")
+         "pressure"]
+        [else
+         "unknown"])))
+    (inherit get-value-as-string get-name set-value! get-value)
     
-    )
-  )
-;represents temperature
-(define temperature-data%
-  (class response-message%
+    (define/public (get-full-string)
+      (string-append
+       name~ "=" value~))
     
-    (init value)
-    
-    (define  celcius~ #t)
-    
-    
-    (inherit set-value! get-value get-value-as-string get-name)
-    
-    (super-new [name 'temp] [value value])
-    
-    (define/public (to-celcius)
-      (cond [(not celcius~)
-             (begin 
-               (set-value! (* (- (get-value) 32) (/ 5 9)))
-               (set! celcius~ #t))]
-            ))
-    
-    (define/public (to-fahrenheit)
-      (cond  [celcius~
-              (begin 
-                (set-value! (* (+ (get-value) 32) (/ 9 5)))
-                (set! celcius~ #f))]))
-    
-    (define/public (which-unit)
-      (if celcius~
-          'celcius
-          'fahrenheit))
-    
-    (define/override (get-type)
-      (if celcius~
-          'temp-celcius
-          'temp-fahrenheit)) 
-    )
-  )
+    (define/public (get-value-type)
+      type~)))
+
 
 ;has an extra date field and procedures to extract days and atc
 ;the date string has to be of the form "YYYY-MM-DD HH:MM:SS"
@@ -130,7 +142,7 @@
     (init-field 
      (date ""))
     (super-new)
-
+    
     
     (define/public (get-seconds)
       (substring date 17))

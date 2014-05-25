@@ -15,7 +15,15 @@
 <td>@(get-field type~ d)</td>
 <td>@(get-field place~ d)</td>
 <td>@(send d get-com-adr-as-string)</td>
-<td><div id="@(get-field id~ d)" class="ToEdit">@(if (send s online?) (send s get-device-status (get-field id~ d)) "OFFLINE")</div></td>
+<td><div id="@(get-field id~ d)" class="ToEdit">
+@(cond ((and (send s online?) (list? (send s get-device-status (get-field id~ d))))
+        (foldl string-append ""
+         (map 
+          (lambda (t-d) (send t-d get-full-string))
+          (send s get-device-status (get-field id~ d)))))
+       ((send s online?)
+        (send s get-device-status (get-field id~ d)))
+       (else "OFFLINE"))</div></td>
 </tr>
 }
 }

@@ -8,7 +8,7 @@
 ;---------------------------------------------------------------------
 
 (require "generic-data.rkt")
-(provide parser%)
+(provide parser% parser$)
 
 (define parser%
   (class object%
@@ -16,38 +16,27 @@
     
     ;Parses a message from a device
     ;returns a list of generic-data-types
-    (define/public (parse-message x-expression device-id)
-      (let ([ack-nack (car x-expression)])
-        (if (eq? ack-nack 'NACK)
-            (new generic-data%
-                 [name "Error"]
-                 [value 'Unknown-message])
-            (let loop
-              ([result '()]
-               [remaining-answers (cdr x-expression)])
-              (if (empty? remaining-answers)
-                  result
-                  ;differentiate between diffrent types of data we already know
-                  (let ([type (caar remaining-answers)]
-                        [value (cadar remaining-answers)]
-                        [data-type 'not-set])
-                    (cond [(eq? type 'TEMP) ;temperature data
-                           (set! 
-                            data-type
-                            (new temperature-data%
-                                 [value value]
-                                 [device-id device-id]))]
-                          ;other data types should come here
-                          [else ;else we put it in a generic data type
-                           (set! 
-                            data-type
-                            (new response-message%
-                                 [name type]
-                                 [value value]
-                                 [device-id device-id]))])
-                    (loop (cons data-type
-                                result)
-                          (cdr remaining-answers))))))))
+    (define/public (parse-message string device-id)
+      (let ([ack-nack (substring string 0 4)])
+        (cond [(equal? ack-nack "nack")
+               (new generic-data%
+                    [name "Error"]
+                    [value 'Unknown-message])]
+              [(equal? (substring ack-nack 0 3) "ack")
+               (new response-message%  
+                    [name "ack"]
+                    [value (substring 4 (string-length string))]
+                    [device-id device-id])]
+              [else
+               (let*
+                   ([tuples (string-split string ",")]
+                    [splitted (map (lambda (s) (string-split s "=")) tuples)])
+                 (map
+                  (lambda (2-list)
+                    (new typed-data%
+                         [name (list-ref 2-list 0)]
+                         [value (list-ref 2-list 1)]))
+                  splitted))])))
     
     ;returns an x-expression for this specific generic-data object
     (define/public (unparse-generic-data generic-data-type)
@@ -111,22 +100,17 @@
                                                       (send obj get-year)))]
                                         [(eq? time-diff 'month)
                                          (set! proc (lambda (obj)
-                                                      (send obj get-month)))
-                                         ]
+                                                      (send obj get-month)))]
                                         [(eq? time-diff 'hour)
                                          (set! proc (lambda (obj)
                                                       (send obj get-hours)))]
                                         [(eq? time-diff 'minute)
                                          (set! proc (lambda (obj)
-                                                      (send obj get-minutes)))]
-                                        )
+                                                      (send obj get-minutes)))] )
                                       (add-string-loop json-hash-table 
                                                        (car remaining-dated-objects) 
                                                        proc)
-                                      (loop json-hash-table (cdr remaining-dated-objects))
-                                      
-                                      )])                                 
-                                 ))
+                                      (loop json-hash-table (cdr remaining-dated-objects)))])))
       (define return-string "")
       ;we have to map to remove excess "," and add "]"
       (hash-map
@@ -135,19 +119,16 @@
          (let*
              ([removed-komma-string 
                (if (> (string-length string) 0)
-               (substring string 0 
-                          (- (string-length string) 1))
-               string)]
+                   (substring string 0 
+                              (- (string-length string) 1))
+                   string)]
               [added-bracket (string-append removed-komma-string
                                             "]\n},\n")])
-           (set! return-string (string-append return-string added-bracket))))
-       )
+           (set! return-string (string-append return-string added-bracket)))))
       
       ;now there's still one excess ","
       (if (> (string-length return-string) 2)
-      (substring return-string 0 (- (string-length return-string) 2)) ; 2 because we have the newline which apperently counts as a character aswell
-      return-string)      
-      )
-    
-    )
-  )
+          (substring return-string 0 (- (string-length return-string) 2)) ; 2 because we have the newline which apperently counts as a character aswell
+          return-string))))
+
+(define parser$ (new parser%))

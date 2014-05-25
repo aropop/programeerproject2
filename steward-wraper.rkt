@@ -14,6 +14,7 @@
          "device.rkt"
          "database-saveable.rkt"
          "settings.rkt"
+         "parser.rkt"
          racket/tcp)
 
 (provide steward-wrapper% steward-wrapper$)
@@ -115,7 +116,12 @@
     (define/public (get-devices-force-discovery)
       (define (device-vector->device-obj vect)
         (if (has-device? (vector-ref vect 1))
-            (get-device (vector-ref vect 1)) ; Get existing device
+            (begin
+              (let ((d (get-device (vector-ref vect 1))))
+                (unless (get-field is-found?~ d)
+                  (set-field! is-found?~ d #t)
+                  (set-field! last-status~ d "Found, loading status..."))
+                d)); Get existing device
             (new device-wrapper%
                  [place~ (vector-ref vect 3)]
                  [com-adr~ (vector-ref vect 2)]
@@ -151,9 +157,12 @@
             (error "No device for id (get-device-status): " device-id)
             (car type))))
     
-    (define/public (get-devices-status-force-message device-id) ;TODO parse
+    (define/public (get-devices-status-force-message device-id)
       (define dev (get-device device-id))
-      (set-field! last-status~ dev (send-to-pi `(send-message-to-device ,device-id "GET"))))
+      (set-field! last-status~ dev (send parser$
+                                         parse-message
+                                         (send-to-pi `(send-message-to-device ,device-id "GET"))
+                                         device-id)))
     
     (define/public (message-all-devices mes)
       (send-to-pi `(send-message-to-all-devices ,mes)))

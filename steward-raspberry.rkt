@@ -37,7 +37,11 @@
        (steward-id~ id)
        (place~ "none")
        ;private
-       (xbee (xbee-init "/dev/ttyUSB0" 9600)))  
+       (xbee (xbee-init "/dev/ttyUSB0" 9600)))
+    
+    
+    ;SIMULATED ONLY
+    (define con (tcp-listen port))
     
     
     ;Help procedure to facilitate debuging
@@ -284,7 +288,7 @@
       ;(let ((io (tcp-accept (tcp-listen port)))
       ;      (in (car io))
       ;       (out (cdr io)))
-      (let-values (((in out) (tcp-accept (tcp-listen port))))
+      (let-values (((in out) (tcp-accept con)))
         (displayln "Connected over TCP/IP")
         (loop in out xbee)))
     
@@ -314,26 +318,25 @@
         (display "Device-list: ") (displayln devices)
         (set! devices~ (map create-device devices))
         (display "Got: ")(displayln mes)
-        ;2 lets because we need to have the devices updated
-        (let ((response (dispatch (car mes) (cdr mes))))
-          (cond 
-            ((eof-object? response)
-             (displayln "Master went down, waiting for new")
-             (reconnect))
-            (else
-             (display "Response: ")(displayln response)                              
-             (write response out)
-             (newline out)
-             (flush-output out)
-             (loop in out xbee)))))
+        (if (eof-object? mes)
+            (begin
+              (displayln "Master went down, waiting for new")
+              (reconnect))
+            ;2 lets because we need to have the devices updated
+            (let ((response (dispatch (car mes) (cdr mes))))
+              (display "Response: ")(displayln response)                              
+              (write response out)
+              (newline out)
+              (flush-output out)
+              (loop in out xbee)))))
+    
+    ;listens to the steward wrapper for the messages
+    ;(let ((io (tcp-accept port))
+    ;      (in (car io))
+    ;       (out (cdr io)))
+    (let-values (((in out) (tcp-accept con)))
+      (displayln "Connected over TCP/IP")
       
-      ;listens to the steward wrapper for the messages
-      ;(let ((io (tcp-accept (tcp-listen port)))
-      ;      (in (car io))
-      ;       (out (cdr io)))
-      (let-values (((in out) (tcp-accept (tcp-listen port))))
-        (displayln "Connected over TCP/IP")
-        
-        (xbee-discover-nodes xbee)
-        
-        (loop in out xbee))))
+      (xbee-discover-nodes xbee)
+      
+      (loop in out xbee))))

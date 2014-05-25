@@ -31,7 +31,7 @@
 (define SIM-DEVICES 
   (list
    (device-slip "PID=ZBS-121V1234567867" (vector 0 0 0 0 0 0 0 0) "Kitchen" 'multiSensor)
-   (device-slip "PID=ZBS-110v2134561234" (vector 0 0 0 0 0 0 0 1) "KidsRoom"  'plug)))
+   (device-slip "PID=ZBS-110V2134561234" (vector 0 0 0 0 0 0 0 1) "KidsRoom"  'plug)))
 
 (define DEVICE2-STATE 'on)
 
@@ -67,13 +67,15 @@
              (bytevector-set! message-bytevector 17 (+ 48 (random 10)))
              (bytevector-set! message-bytevector 16 (+ 49 (random 2)))
              ;Bri
-              (bytevector-set! message-bytevector 27 (+ 49 (random 3)))
-              (bytevector-set! message-bytevector 28 (+ 48 (random 10)))
+             (bytevector-set! message-bytevector 27 (+ 49 (random 3)))
+             (bytevector-set! message-bytevector 28 (+ 48 (random 10)))
              ;Hum
-              (bytevector-set! message-bytevector 36 (+ 48 (random 10)))
-              (bytevector-set! message-bytevector 37 (+ 48 (random 10)))
+             (bytevector-set! message-bytevector 36 (+ 48 (random 10)))
+             (bytevector-set! message-bytevector 37 (+ 48 (random 10)))
              ;PRES
-              (bytevector-set! message-bytevector 48 (+ 52 (random 2)))))
+             (bytevector-set! message-bytevector 48 (+ 52 (random 2)))
+             (bytevector-set! message-bytevector 50 (+ 48 (random 10)))
+             (bytevector-set! message-bytevector 51 (+ 48 (random 10)))))
    ;Device 2 (ABCDEFGH) Plug
    (vector "GET" 
            #(71 69 84 10)

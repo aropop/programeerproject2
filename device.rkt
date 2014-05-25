@@ -28,7 +28,8 @@
      com-adr~
      type~
      steward-wrapper~
-     (last-status~ "Loading...")
+     (last-status~ "Searching for device...")
+     (is-found?~ #f)
      (is-stored?~ #f))
     
     
@@ -88,7 +89,7 @@
              [com-adr~ (deserialize-com-adr com-adr)]
              [type~ type]
              [steward-wrapper~ st]
-             [is-stored~ #t])))))
+             [is-stored?~ #t])))))
 
 (define device-wrapper$ (new device-wrapper%
                              [id~ 0]

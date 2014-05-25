@@ -329,14 +329,8 @@
     ;  (displayln "Connected over TCP/IP")
     
     (xbee-discover xbee)
-    (sleep)
-    (sleep)
-    (sleep)
     (xbee-tick xbee)
     (sleep)
-    (sleep)
-    (xbee-tick xbee)
-    
     (set! devices~ (map create-device (xbee-list)))
     
     ;  (loop in out xbee))))

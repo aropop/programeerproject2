@@ -91,10 +91,10 @@
     ;Get the steward for the id
     (define/public (get-steward steward-id)
       (let ((type (filter-map (lambda (steward)
-                               (and
-                                (equal? steward-id (get-field steward-id~ steward))
-                                steward))
-                             stewards~)))
+                                (and
+                                 (equal? steward-id (get-field steward-id~ steward))
+                                 steward))
+                              stewards~)))
         (if (null? type)
             (error "No steward for id (get-steward): " steward-id
                    (map (lambda (s) (get-field steward-id~ s)) stewards~))
@@ -104,11 +104,14 @@
     ;returns the steward which has the device 
     ;this adds an extra check whith correct error handling
     (define/public (get-steward-for-device device-id)
-      (let ([filtered (filter (lambda (steward)
-                                (send steward has-device? device-id))
-                              stewards~)])
+      (let ([filtered (filter-map (lambda (steward)
+                                    (and 
+                                     (send steward has-device? device-id)
+                                     steward))
+                                  stewards~)])
         (if (null? filtered)
-            (error "No such device on any of the masters' stewards, device id:" device-id)
+            (error "No such device on any of the masters' stewards, device id:" device-id
+                   (map (lambda (s) (send s get-devices)) stewards~))
             (car filtered))))
     
     ;Has to be called upon shutting the system down

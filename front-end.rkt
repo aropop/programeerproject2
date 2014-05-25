@@ -54,7 +54,7 @@
          ;in here the actual content should be stored
          [inside-main 'temp]
          [answer-type 'normal-html]
-         [data "niets"])
+         [data "ERROR"])
         (cond
           ;stewards page
           [(equal? page "stewards")
@@ -108,9 +108,18 @@
            (set! answer-type 'simple-data)
            (let* 
                ([device-id (extract-binding/single 'id (request-bindings requests))]
-                [steward (send master~ get-steward-for-device device-id)]
-                [data-t (send steward get-device-status device-id)])
-             (set! data data-t))]
+                [steward (with-handlers ((exn:fail? (lambda (e)
+                                                      'off)))
+                           (send master~ get-steward-for-device device-id))]
+                [data-t (if (eq? 'off steward)
+                            "Steward offline"
+                            (send steward get-device-status device-id))])
+             (if (string? data-t)
+                 (set! data data-t)
+                 (set! data (foldl string-append ","
+                                   (map 
+                                    (lambda (t-d) (send t-d get-full-string))
+                                    (send steward get-device-status device-id))))))]
           
           [(equal? page "getStewardDevices")
            (set! answer-type 'simple-data)
