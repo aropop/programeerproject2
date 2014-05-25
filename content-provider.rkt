@@ -124,9 +124,4 @@
       (let* ([query "SELECT MAX(date) FROM Data"]
              [result (send db-manager~ execute/return query)])
         (send result get-next-row)
-        (send result get-current-row-colum 0)))
-    
-    
-    
-    )
-  )
+        (send result get-current-row-colum 0)))))

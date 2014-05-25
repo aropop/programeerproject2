@@ -116,9 +116,9 @@
            (set! answer-type 'simple-data)
            (let* 
                ([s-id (extract-binding/single 'id (request-bindings requests))]
-                [steward (send master~ get-steward s-id)]
+                [steward (send master~ get-steward (string->number s-id))]
                 [data-t (send steward get-devices-count)])
-             (set! data data-t))]
+             (set! data (if (number? data-t) (number->string data-t) data-t)))]
           
           [(equal? page "data_whole_system") ; bug with minute data of diffrent hours is shown
            (let* ([unparsed-data (send master~ get-data 'all)]

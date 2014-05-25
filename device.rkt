@@ -11,7 +11,8 @@
 ;---------------------------------------------------------------------
 
 
-(require "database-saveable.rkt")
+(require "database-saveable.rkt"
+         "macros.rkt")
 (provide device-wrapper% device-wrapper$)
 
 
@@ -30,12 +31,24 @@
      (last-status~ "Loading...")
      (is-stored?~ #f))
     
-    ;TODO
+    
+    (define* 
+      (sep "."))
+    
+    
     (define/private (serialize-com-adr com-adr)
-      #t)
+      (define ret "")
+      (let 
+          lp
+        ((idx 0))
+        (if (>= idx (vector-length com-adr))
+            ret
+            (begin
+              (string-append ret sep (number->string (vector-ref com-adr idx)))
+              (lp (+ idx 1))))))
     
     (define/private (deserialize-com-adr com-adr)
-      #t)
+      (list->vector (string-split com-adr sep)))
     
     (define/public (is-already-stored?)
       is-stored?~)
@@ -54,13 +67,13 @@
     (define/public (store-sql)
       (if (is-already-stored?)
           (string-append
-           "UPDATE Device SET type='" type~ "', communication_address='" com-adr~ "'"
+           "UPDATE Device SET type='" type~ "', communication_address='" (serialize-com-adr com-adr~) "'"
            "WHERE device_id='" id~ "'")
           (string-append
            "INSERT INTO Device (device_id, type, communication_address, steward_id) VALUES ('"
-           id~ "', '" type~ "', '" com-adr~ "', " (get-field 
-                                                                    steward-id~
-                                                                    steward-wrapper~) ")"))) 
+           id~ "', '" type~ "', '" (serialize-com-adr com-adr~) "', " (number->string (get-field 
+                                                   steward-id~
+                                                   steward-wrapper~)) ")"))) 
     
     
     (define/public (get-sql)
@@ -72,7 +85,7 @@
         (new device-wrapper%
              [id~ id]
              [place~ place]
-             [com-adr~ com-adr]
+             [com-adr~ (deserialize-com-adr com-adr)]
              [type~ type]
              [steward-wrapper~ st]
              [is-stored~ #t])))))

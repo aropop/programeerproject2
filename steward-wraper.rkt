@@ -60,6 +60,9 @@
          (flush-output output-port~)
          (let ((ret (read input-port~)))
            (set! communication-lock~ #f)
+           (when (eof-object? ret)
+             (set! status~ 'offline)
+             (set! ret "Connection lost"))
            ret)]))
     
     (define/private (connect-to-pi)
@@ -102,9 +105,9 @@
     (define/public (get-devices-count)
       (cond
         [searched-for-devices-once
-          (length devices~)]
+         (length devices~)]
         [(online?)
-          "Searching.."]
+         "Searching.."]
         [else 
          "OFFLINE"]))
     
@@ -120,8 +123,8 @@
                  [type~ (vector-ref vect 4)]
                  [steward-wrapper~ this])))
       (when (online?)
-        (set! devices~ (map device-vector->device-obj (send-to-pi '(get-device-list)))))
-      (set! searched-for-devices-once #t)
+        (set! devices~ (map device-vector->device-obj (send-to-pi '(get-device-list))))
+        (set! searched-for-devices-once #t))      
       devices~)
     
     (define/public (send-message-to-device device-id mes)

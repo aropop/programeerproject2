@@ -51,7 +51,7 @@
        display
        mes)
       (newline))
- 
+    
     ;Sleeps for seconds
     (define (sleep)
       (define time (+ 3e+3 (clock))) 
@@ -182,7 +182,7 @@
        (= (bytevector-length bv1) (bytevector-length bv2))
        (eq-lp 0)))
     
-        
+    
     ;Slip has not yet implemented this procedure so we define it here
     (define (string->list str)
       (define l (string-length str))
@@ -269,7 +269,7 @@
        (cadr xbee-node)
        place~
        (get-device-type (car xbee-node))))
-       
+    
     
     
     ;returns the list of device objects
@@ -278,6 +278,15 @@
       (map (lambda (dev)
              (dev 'serialize))
            devices~))
+    
+    ;Reconnects when master goes down
+    (define (reconnect)
+      ;(let ((io (tcp-accept (tcp-listen port)))
+      ;      (in (car io))
+      ;       (out (cdr io)))
+      (let-values (((in out) (tcp-accept (tcp-listen port))))
+        (displayln "Connected over TCP/IP")
+        (loop in out xbee)))
     
     
     (define (dispatch mes . args)
@@ -307,19 +316,24 @@
         (display "Got: ")(displayln mes)
         ;2 lets because we need to have the devices updated
         (let ((response (dispatch (car mes) (cdr mes))))
-          (display "Response: ")(displayln response)                              
-          (write response out)
-          (newline out)
-          (flush-output out)
-          (loop in out xbee))))
-    
-    ;listens to the steward wrapper for the messages
-    ;(let ((io (tcp-accept (tcp-listen port)))
-    ;      (in (car io))
-    ;       (out (cdr io)))
-    (let-values (((in out) (tcp-accept (tcp-listen port))))
-      (displayln "Connected over TCP/IP")
+          (cond 
+            ((eof-object? response)
+             (displayln "Master went down, waiting for new")
+             (reconnect))
+            (else
+             (display "Response: ")(displayln response)                              
+             (write response out)
+             (newline out)
+             (flush-output out)
+             (loop in out xbee)))))
       
-      (xbee-discover-nodes xbee)
-      
-      (loop in out xbee))))
+      ;listens to the steward wrapper for the messages
+      ;(let ((io (tcp-accept (tcp-listen port)))
+      ;      (in (car io))
+      ;       (out (cdr io)))
+      (let-values (((in out) (tcp-accept (tcp-listen port))))
+        (displayln "Connected over TCP/IP")
+        
+        (xbee-discover-nodes xbee)
+        
+        (loop in out xbee))))

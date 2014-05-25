@@ -60,8 +60,20 @@
             10 10)
            (vector 0 0 0 0 0 0 0 0)
            (lambda (message-bytevector) 
-             (bytevector-set! message-bytevector 21 (random 10))
-             (bytevector-set! message-bytevector 22 (+ 1 (random 2)))))
+             ;Temp
+             (bytevector-set! message-bytevector 21 (+ 48 (random 10)))
+             (bytevector-set! message-bytevector 20 (+ 48 (random 10)))
+             (bytevector-set! message-bytevector 19 (+ 48 (random 10)))
+             (bytevector-set! message-bytevector 17 (+ 48 (random 10)))
+             (bytevector-set! message-bytevector 16 (+ 49 (random 2)))
+             ;Bri
+              (bytevector-set! message-bytevector 27 (+ 49 (random 3)))
+              (bytevector-set! message-bytevector 28 (+ 48 (random 10)))
+             ;Hum
+              (bytevector-set! message-bytevector 36 (+ 48 (random 10)))
+              (bytevector-set! message-bytevector 37 (+ 48 (random 10)))
+             ;PRES
+              (bytevector-set! message-bytevector 48 (+ 52 (random 2)))))
    ;Device 2 (ABCDEFGH) Plug
    (vector "GET" 
            #(71 69 84 10)

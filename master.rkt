@@ -88,6 +88,18 @@
     (define/public (get-all-rooms)
       (send content-provider~ get-rooms))
     
+    ;Get the steward for the id
+    (define/public (get-steward steward-id)
+      (let ((type (filter-map (lambda (steward)
+                               (and
+                                (equal? steward-id (get-field steward-id~ steward))
+                                steward))
+                             stewards~)))
+        (if (null? type)
+            (error "No steward for id (get-steward): " steward-id
+                   (map (lambda (s) (get-field steward-id~ s)) stewards~))
+            (car type))))
+    
     
     ;returns the steward which has the device 
     ;this adds an extra check whith correct error handling
