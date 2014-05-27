@@ -1,0 +1,80 @@
+<script type="text/javascript">
+function setEqual(){
+/* Sets the values of the last row equal to the hidden form */
+var type = document.getElementById("actionTypeInput").value;
+var value = document.getElementById("actionValueInput").value;
+var command = document.getElementById("actionCommandInput").value;
+var equality = document.getElementById("actionEqualityInput").value;
+var device = document.getElementById("actionDeviceInput").value;
+
+document.addActionForm.actionValue.value = value;
+document.addActionForm.actionType.value = type;
+document.addActionForm.actionCommand.value = command;
+document.addActionForm.actionEquality.value = equality;
+document.addActionForm.actionDevice.value = device;
+document.addActionForm.submit();
+}
+
+</script>
+
+<!-- steward table template -->
+<table id="steward-table">
+<tr>
+<th>ID</th>
+<th>Type</th>
+<th>Value</th>
+<th>Command</th>
+<th>Device-id</th>
+<th>Equality</th>
+</tr>
+@in[a actions]{
+<tr>
+<td> @(get-field action-id~ a) </td>
+<td> @(get-field type~ a) </td>
+<td> @(get-field value~ a) </td>
+<td> @(get-field command~ a) </td>
+<td> @(get-field device-id~ a) </td>
+<td> @(send a get-equality-string) </td>
+</tr>
+}
+
+
+
+<tr>
+<!-- 
+While it is more esthetic to use the last row as a form to add new actions, it 
+comes with some more difficulties. Because we can't use a form as the last row
+we make a small hidden form and on submit make all the values of the hidden inputs
+equal to those in the visible ones -->
+<td>Add</td>
+<td><input type="text" id="actionTypeInput"/></td>
+<td><input type="text" id="actionValueInput"/></td>
+<td><input type="text" id="actionCommandInput"/></td>
+<td> 
+<select id="actionDeviceInput">
+@in[d device-ids]{
+<option name="@|d|">@|d|</option>
+}
+</select></td>
+<td> 
+<!-- the inputo of this table div will be changed when the user selects add new
+ equalities -->
+<select id="actionEqualityInput">
+@in[e equalities]{
+<option name="@|e|">@|e|</option>
+}
+</select></td>
+<td>
+<!-- so this is a pure hidden form only the submit is visible -->
+<form name="addActionForm" method="POST">
+<input type="hidden" name="page" value="handleAddAction">
+<input type="hidden" name="actionType"/>
+<input type="hidden" name="actionValue" />
+<input type="hidden" name="actionCommand" />
+<input type="hidden" name="actionDevice" />
+<input type="hidden" name="actionEquality" /></form>
+<br />
+<button onclick="setEqual()"><image src="/images/add.gif" /></button>
+</td> 
+</tr>
+</table>
