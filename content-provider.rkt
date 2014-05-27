@@ -12,6 +12,7 @@
          "steward-wraper.rkt"
          "device.rkt"
          "macros.rkt"
+         "action.rkt"
          "generic-data.rkt")
 
 (#%provide content-provider%)
@@ -46,6 +47,26 @@
                                      (send steward-data get-current-row-colum 1))
                         master)
                        stewards-list)))))))
+    
+    ;returns the stored actions as action objects
+    (define/public (get-actions)
+      (let* ([query (send action$ get-sql)]
+             [action-data (send db-manager~ execute/return query)]
+             [create-action (send action$ create-lambda)])
+        (let loop
+          ([action-list '()])          
+          (if (send action-data at-end?)            
+              action-list
+              (begin
+                (send action-data get-next-row)
+                (loop
+                 (cons (create-action 
+                        (send action-data get-current-row-colum 0)
+                        (send action-data get-current-row-colum 1)
+                        (send action-data get-current-row-colum 2)
+                        (send action-data get-current-row-colum 3)
+                        (send action-data get-current-row-colum 4))
+                       action-list)))))))
     
     
     ;returns the devices as device objects

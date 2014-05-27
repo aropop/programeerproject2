@@ -30,8 +30,8 @@
 
 (define SIM-DEVICES 
   (list
-   (device-slip "PID=ZBS-121V1234567867" (vector 0 0 0 0 0 0 0 0) "Kitchen" 'multiSensor)
-   (device-slip "PID=ZBS-110V2134561234" (vector 0 0 0 0 0 0 0 1) "KidsRoom"  'plug)))
+   (device-slip "ZBS-121V1234567867" (vector 0 0 0 0 0 0 0 0) "Kitchen" 'multiSensor)
+   (device-slip "ZBS-110V2134561234" (vector 0 0 0 0 0 0 0 1) "KidsRoom"  'plug)))
 
 (define DEVICE2-STATE 'on)
 
@@ -217,7 +217,7 @@
   (get-right SIM-DEVICES))
 
 (define (xbee-tick xb)
-  (length SIM-DEVICES))
+  (length ANSWERS))
 
 (define (xbee-list-nodes)
   (map 

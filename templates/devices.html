@@ -19,7 +19,7 @@
 @(cond ((and (send s online?) (list? (send s get-device-status (get-field id~ d))))
         (foldl string-append ""
          (map 
-          (lambda (t-d) (send t-d get-full-string))
+          (lambda (t-d) (send t-d get-nice-string))
           (send s get-device-status (get-field id~ d)))))
        ((send s online?)
         (send s get-device-status (get-field id~ d)))

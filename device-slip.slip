@@ -1,9 +1,12 @@
 
 ;Wraper for the devices 
 (define (device-slip device-id com pla type)
+  
+  (define (bytevector->vector bv)
+    (list->vector (bytevector->list bv)))
    
   (define (serialize)
-    (vector 'device device-id com pla type))
+    (vector 'device device-id (bytevector->vector com) pla type))
   
   (define (dispatch mes . args)
     (cond  ((eq? mes 'get-device-id) device-id)

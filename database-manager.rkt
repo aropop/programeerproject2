@@ -44,8 +44,18 @@ port INT NOT NULL,
 room_name VARCHAR(30) REFERENCES Room(name) ON UPDATE CASCADE ON DELETE SET NULL
 );"
         
+         "CREATE TABLE Action (
+action_id INTEGER PRIMARY KEY ASC AUTOINCREMENT,
+type VARCHAR(15) NOT NULL,
+value VARCHAR(15) NOT NULL,
+command VARCHAR(30) NOT NULL,
+equality VARCHAR(4) NOT NULL,
+port INT NOT NULL,
+device_id VARCHAR(30) REFERENCES Device(device_id) ON UPDATE CASCADE ON DELETE SET NULL
+);"
+        
         "CREATE TABLE Device (
-device_id STRING(8) PRIMARY KEY,
+device_id VARCHAR(30) PRIMARY KEY,
 type VARCHAR(20) NOT NULL,
 communication_address VARCHAR(50) NOT NULL,
 steward_id INT REFERENCES Steward(steward_id) ON UPDATE RESTRICT ON DELETE CASCADE

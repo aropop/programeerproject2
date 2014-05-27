@@ -25,11 +25,12 @@
     
     (define*
       [stewards~ '()]
+      [actions~ '()]
       ;procedure init initialises these objects to prevent 2 database connections
       [content-provider~ 'uninitialised] 
       [content-storer~ 'uninitialised]
       ;threads responsible for collecting data and saving the state of the system
-      [data-thread~ 'uninitialised]
+      [data-action-thread~ 'uninitialised]
       [save-thread~ 'uninitialised]
       
       [last-saved~ (current-milliseconds)])
@@ -44,8 +45,9 @@
                                    [content-provider content-provider~]
                                    [database-manager db-manager]))
         (set! stewards~ (send content-provider~ get-stewards this))
+        (set! actions~ (send content-provider~ get-actions))
         ;set the data collectin thread
-        (set! data-thread~ (thread (lambda () 
+        (set! data-action-thread~ (thread (lambda () 
                                      (define x (current-milliseconds))
                                      (let loop ()
                                        (if (> (- (current-milliseconds) x) 
@@ -100,6 +102,10 @@
                    (map (lambda (s) (get-field steward-id~ s)) stewards~))
             (car type))))
     
+    ;Get actions
+    (define/public (get-actions)
+      actions~)
+    
     
     ;returns the steward which has the device 
     ;this adds an extra check whith correct error handling
@@ -117,7 +123,8 @@
     ;Has to be called upon shutting the system down
     (define/public (destruct)
       (save)
-      (kill-thread data-thread~))
+      (kill-thread data-action-thread~)
+      (kill-thread save-thread~))
     
     
     ;saves 
@@ -135,6 +142,40 @@
       (displayln "Saved")
       ;set the last save time
       (set! last-saved~ (current-milliseconds)))
+    
+    
+     ;Procedure that will be executed to collect data
+    (define/private (collect-data)
+      ;iterate
+      (map
+       (lambda (steward)
+         (map
+          (lambda (device)
+            (map
+             (lambda (parsed-message)
+               (send content-storer~ store parsed-message))
+             ;Status may return a string, this is the loading status for the front end
+             (let ((status-list (send steward get-device-status (get-field id~ device)))) 
+               (if (string? status-list)
+                   '()
+                   status-list))))
+          (send steward get-devices)))
+       stewards~)
+      ;debugging
+      (display "Collected data on ")
+      (displayln (current-milliseconds)))
+    
+    ;Procedure will check all the actions, executed right after data-collects thread
+    ;so we have "fresh" information on the stewards
+    (define/private (check-actions)
+      (map
+       (lambda (action)
+         (let ((steward (get-steward-for-device
+                         (get-field device-id~ action))))
+         (send action execute steward)))
+       actions~)
+      (display "Checked all actions")
+      (newline))
     
     ;Procedure that returns facts about the system
     (define/public (get-facts fact)
@@ -155,28 +196,6 @@
           (get-stewards))]
         [(eq? fact 'amount-stewards)
          (length (get-stewards))]))
-    
-    
-    ;Procedure that will be executed to collect data
-    (define/private (collect-data)
-      ;iterate
-      (map
-       (lambda (steward)
-         (map
-          (lambda (device)
-            (map
-             (lambda (parsed-message)
-               (send content-storer~ store parsed-message))
-             ;Status may return a string, this is the loading status for the front end
-             (let ((status-list (send steward get-device-status (get-field id~ device)))) 
-               (if (string? status-list)
-                   '()
-                   status-list))))
-          (send steward get-devices)))
-       stewards~)
-      ;debugging
-      (display "Collected data on ")
-      (displayln (current-milliseconds)))
     
     ;procedure that dispatches the calls for data from a front end
     (define/public (get-data which . options)

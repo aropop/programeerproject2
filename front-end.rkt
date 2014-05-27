@@ -12,7 +12,8 @@
          web-server/http/response-structs
          web-server/http/bindings
          "settings.rkt"
-         "parser.rkt")
+         "parser.rkt"
+         "action.rkt")
 
 (provide html-front-end%)
 
@@ -38,7 +39,8 @@
     (inherit-field master~)
     
     (define menuitems
-      (list '("home" . "Home") '("stewards" . "Stewards") '("devices" . "Devices") '("data" ."Data")))
+      (list '("home" . "Home") '("stewards" . "Stewards")
+            '("devices" . "Devices") '("actions" . "Actions") '("data" ."Data")))
     (define home-page 'home)
     
     ;dispatches between diffrent requests (read pages)
@@ -72,6 +74,19 @@
                         stewards)])
              (set! inside-main (include-template "templates/devices.html")))]
           
+          ;devices page
+          [(equal? page "actions")
+           (let* ([actions  (send master~ get-actions)]
+                  [device-ids 
+                   (map (lambda (steward)
+                          (map 
+                           (lambda (device)
+                             (get-field id~ device))
+                           (send steward get-devices)))
+                        (send master~ get-stewards))]
+                  [equalities (send action$ get-equality-list)])
+             (set! inside-main (include-template "templates/actions.html")))]
+          
           [(equal? page "handleAddSteward")
            (let* ([bindings (request-bindings requests)]
                   [place (extract-binding/single 'stewardplace bindings)]
@@ -88,7 +103,9 @@
                                                    ":"
                                                    port
                                                    "'") 
-                                    inside-main)))]
+                                    inside-main
+                                    answer-type
+                                    data)))]
           
           [(equal? page "data")
            (let* ([room_tuple (map 
@@ -116,9 +133,9 @@
                             (send steward get-device-status device-id))])
              (if (string? data-t)
                  (set! data data-t)
-                 (set! data (foldl (lambda (s s2) (string-append s "," s2)) ""
+                 (set! data (foldl (lambda (s s2) (string-append s s2)) ""
                                    (map 
-                                    (lambda (t-d) (send t-d get-full-string))
+                                    (lambda (t-d) (send t-d get-nice-string))
                                     (send steward get-device-status device-id))))))]
           
           [(equal? page "getStewardDevices")
@@ -157,6 +174,8 @@
           
           
           [else (let* ((main (include-template "templates/main.html"))
+                       (footer (include-template "templates/footer.html"))
+                       (menu (include-template "templates/menu.html"))
                        (body (include-template "templates/body.html")))
                   (response/full
                    200 #"Okay"
@@ -175,14 +194,9 @@
         (include-template "templates/head.html")))
     
     (define/private (render-heading-template)
-      (let (
-            [head-text "Control your house"]
-            [home-link "home"]
-            [menu (include-template "templates/menu.html")] ;menu-items are defined as a private field of this class
-            )
-        (include-template "templates/heading.html")
-        )
-      )
+      (let ([head-text "Control your house"]
+            [home-link "home"])
+        (include-template "templates/heading.html")))
     
     ;the list of bindings is constructed as follows
     ;'( (binding-name . binding-value) (next-binding-name . next-binding-value) ... )

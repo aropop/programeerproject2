@@ -56,7 +56,7 @@
     
     ;For printing in front-end
     (define/public (get-com-adr-as-string)
-      (define string (make-string (vector-length com-adr~)))
+      (define string (make-string (vector-length com-adr~) #\a))
       (let lp
         ((idx 0))
         (if (>= idx (vector-length com-adr~))

@@ -51,7 +51,6 @@
          (send-to-pi mes)]
         ;Make sure an other thread isn't sending, scheduling will switch sometime so no deadlocks
         [communication-lock~
-         (display "locked!")
          (newline)
          (send-to-pi mes)]
         [else
@@ -62,8 +61,9 @@
          (let ((ret (read input-port~)))
            (set! communication-lock~ #f)
            (when (eof-object? ret)
+             (displayln "Steward went offline")
              (set! status~ 'offline)
-             (set! ret "Connection lost"))
+             (set! ret '()))
            ret)]))
     
     (define/private (connect-to-pi)

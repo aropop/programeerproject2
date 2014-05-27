@@ -160,6 +160,9 @@
       (string-append
        name~ "=" value~))
     
+    (define/public (get-nice-string)
+      (string-append name~ ": " value~ "<br />"))
+    
     (define/public (get-value-type)
       type~)
     

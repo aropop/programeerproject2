@@ -11,15 +11,17 @@
 
 (define SUPPORTED-DEVICES
   (list 
-   (vector 'plug "PID=ZBS-110" "Plug")
-   (vector 'multiSensor "PID=ZBS-121" "MultiSensor")))
+   (vector 'plug "ZBS-110" "Plug" (list (cons "GET" 'not) 
+                                        (cons "SET POW=ON" "ack: set pow=on") 
+                                        (cons "SET POW=OFF" "ack: set pow=off")))
+   (vector 'multiSensor "ZBS-121" "MultiSensor" '())))
 
 (define package-recieved-code 144)
 (define package-recieved-data-offset 12)
 (define package-recieved-end-length 2)
 (define package-transmit-info-code 139)
 (define package-transmit-succes 0)
-(define package-transmit-offset 4)
+(define package-transmit-offset 5)
 
 
 (define (steward% id port)
@@ -32,32 +34,30 @@
        ;private
        (xbee (xbee-init "/dev/ttyUSB0" 9600)))  
     
-    (define (error . mes)
-      (display mes))
     
     ;Help procedure to facilitate debuging
     (define (displayln mes)
       (display mes)
       (newline))
     
-    (define (string->list str)
-      (define l (string-length str))
-      (define (lp i lst)
-        (if (< i 0)
-            lst
-            (lp (- i 1) (cons (string-ref str i) lst))))
-      (lp (- l 1) '()))
-    
+    ;Displays an error (slips defines error but it's just a display of the first argument
+    (define (error . mes)
+      (map
+       display
+       mes)
+      (newline))
     
     ;Sleeps for seconds
-    (define (sleep)
-      (define time (+ 3e+3 (clock))) 
+    (define (sleep t)
+      (define time (+ t (clock))) 
       (define (lp)
         (if (not (>= (clock) time))
             (lp)))
       (lp))
     
+    ;Sleeps till there is a message
     (define (sleep2)
+      (sleep 5e+2)
       (if (not (xbee-ready? xbee))
           (sleep2)))
     
@@ -89,6 +89,7 @@
                  (set! has-device-bool #t)))
            devices~)
       has-device-bool)
+    
     
     ;defines if this steward is already in the database
     (define (is-already-stored?)
@@ -129,14 +130,7 @@
     
     ;Converts to a string
     (define (bytevector->string byte-vector . fromTo)
-      (display byte-vector)
-      (define l (-
-                 (bytevector-length byte-vector)
-                 (cond ;String might be too big
-                   ((null? fromTo) 0)
-                   ((null? (cdr fromTo)) (car fromTo))
-                   (else (+ (car fromTo) (- (bytevector-length byte-vector) (cadr fromTo)))))))
-      (define (lp idx str-idx str)
+      (define (lp idx str-idx str l)
         (if (or
              (>= str-idx l)
              (and 
@@ -144,14 +138,23 @@
               (>= idx (cadr fromTo))))
             str
             (begin
-              (display str-idx)(display " ") (display idx) (display " ") (displayln  str)
+              ;(display str-idx)(display " ") (display idx) (display " ") (displayln  str)
               (if (= (bytevector-ref byte-vector idx) 10)
                   (string-set! str str-idx #\,)
                   (string-set! str str-idx (integer->char (bytevector-ref byte-vector idx))))
-              (lp (+ idx 1) (+ str-idx 1) str))))
-      (if (>= (length fromTo) 1)
-          (lp (car fromTo) 0 (make-string l #\a))
-          (lp 0 0 (make-string l #\a))))
+              (lp (+ idx 1) (+ str-idx 1) str l))))
+      (if (= (length fromTo) 3) ;unreproducable bug sometimes gives the 3 arguments in fromTo
+          (set! fromTo (cdr fromTo)))
+      (let 
+          ((l (-
+               (bytevector-length byte-vector)
+               (cond ;String might be too big
+                 ((null? fromTo) 0)
+                 ((null? (cdr fromTo)) (car fromTo))
+                 (else (+ (car fromTo) (- (bytevector-length byte-vector) (cadr fromTo)))))))) 
+        (if (>= (length fromTo) 1)
+            (lp (car fromTo) 0 (make-string l #\a) l)
+            (lp 0 0 (make-string l #\a) l))))
     
     ;Slip has not yet implemented this procedure so we define it here
     (define (list->bytevector list)
@@ -164,7 +167,7 @@
               (bytevector-set! v i (car lst))
               (set! i (+ i 1))
               (lp (cdr lst)))))
-      (bytevector-set! v (length list) 16)
+      (bytevector-set! v (length list) 10)
       (lp list))
     
     ;Slip has not yet implemented this procedure so we define it here
@@ -178,28 +181,39 @@
        (= (bytevector-length bv1) (bytevector-length bv2))
        (eq-lp 0)))
     
+    
+    ;Slip has not yet implemented this procedure so we define it here
+    (define (string->list str)
+      (define l (string-length str))
+      (define (lp i lst)
+        (if (< i 0)
+            lst
+            (lp (- i 1) (cons (string-ref str i) lst))))
+      (lp (- l 1) '()))
+    
     ;Adds a device
     ;Device should be a list whith the arguments to make an raspberry device ADT
     (define (add-device device-list)
       (let ((device (apply device-list device-slip))) 
         (set! devices~ (cons device devices~))))
     
+    ;Converts a message into a bytevector to send
     (define (string->bytevector string)
-      (list->bytevector (map char->integer (string->list mes)))) 
-    
-    
-    
-    
-    (define (send-message-to-all-devices mes)
-      (map
-       (lambda (dev)
-         (send-message-to-device (dev 'get-address)))
-       devices~))
+      (list->bytevector (map char->integer (string->list string)))) 
     
     
     ;Sends the actual data
-    (define (send-bytes-to-device bytes adr)
-      (displayln adr)
+    (define (send-bytes-to-device bytes adr content-expectation)
+      (define last-good-frame 'null)
+      (define (content-satisfies? message-string)
+        (displayln message-string)
+        (displayln content-expectation)
+        (or
+         (symbol? content-expectation)
+         (and 
+          (>= (string-length message-string) (string-length content-expectation))
+          (equal? (substring message-string 0 (string-length content-expectation))
+                  content-expectation))))
       (define (frame-type frame)
         (bytevector-ref frame 0))
       (define (frame-address frame)
@@ -211,90 +225,137 @@
                 (bytevector-set! frame-adr (- idx 1) (bytevector-ref frame idx))
                 (lp (+ idx 1)))))
         (lp 1))
-      (define (read-loop idx)
-        (sleep2)
-        (let ((current-frame  (xbee-read xbee)))
+      (define (read-loop)
+        ;(sleep2)
+        (let ((current-frame  (if (or
+                                   (not (= (xbee-tick xbee) 0))
+                                   (xbee-ready? xbee)) 
+                                  (xbee-read xbee) 
+                                  'no-more)))
           (cond
-            ;No more frames
-            ((not (xbee-ready? xbee)) 
-             (error "Could not find suitable message"))
+            
+            ((eq? current-frame 'no-more)
+             (if (eq? 'null last-good-frame)
+                 (begin 
+                   (displayln "Could not find anything retrying")
+                   (sleep 1e+2)
+                   (xbee-tick xbee)
+                   (read-loop))
+                 last-good-frame))
+            
             ;Frame is a recieved package
             ((and
               (= (frame-type current-frame) package-recieved-code)
               (bytevector-equal? (frame-address current-frame) adr))
              (display "Got frame, message: ") 
-             (displayln (bytevector->string current-frame package-recieved-data-offset (- (bytevector-length current-frame) 2)))
-             current-frame)
-            ;Frame is a succesfull set
-            ((and
-              (= (frame-type current-frame) package-recieved-code)
-              (bytevector-equal? (frame-address current-frame) adr))
-             current-frame)
+             (displayln (bytevector->string current-frame 
+                                            package-recieved-data-offset 
+                                            (- (bytevector-length current-frame) 
+                                               package-recieved-end-length)))
+             (if (content-satisfies? (bytevector->string current-frame 
+                                                         package-recieved-data-offset 
+                                                         (- (bytevector-length current-frame) 
+                                                            package-recieved-end-length)))
+                 (set! last-good-frame current-frame))
+             (read-loop))
             ;Transmit info package
             ((= (frame-type current-frame) package-transmit-info-code)
              (if (= (bytevector-ref current-frame package-transmit-offset) package-transmit-succes)
                  (begin
                    (displayln "Transmitting succesfull, waiting for response packet")
-                   (sleep2)
-                   (read-loop (+ idx 1)))
+                   (read-loop))
                  (begin
                    (displayln "Not correctly sent, retrying")
-                   (send-bytes-to-device bytes adr)))) 
+                   (xbee-write xbee adr bytes)
+                   (read-loop)))) 
             (else ;Unknown message type
-             (read-loop (+ idx 1))))))
+             (read-loop)))))
       (xbee-write xbee adr bytes)
-      (sleep)
       (xbee-tick xbee)
-      (read-loop 5))
+      (sleep 5e+3)
+      (read-loop))
     
     ;Sends a single message to a device
     (define (send-message-to-device device-id mes)
       (define dev (get-device device-id))
-      (define message-bytes (list->bytevector (map char->integer (string->list mes))))
-      (let ((frame (send-bytes-to-device message-bytes (dev 'get-address))))
-        (bytevector->string frame package-recieved-data-offset (- (bytevector-length frame) 
-                                                                  package-recieved-end-length))))
+      (define message-bytes (string->bytevector mes))
+      (define (get-expectated-mes me)
+        (define type (dev 'get-type))
+        (define (search-mes lst)
+          (cond ((null? lst) 'nothing)
+                ((equal? (caar lst) me) (cdar lst))
+                (else (cdr lst))))
+        (define (get-vect-loop lst)
+          (cond ((null? lst) 'nothing)
+                ((equal? (vector-ref (car lst) 1) type) (search-mes (vector-ref (car lst) 3)))
+                (else (get-vect-loop (cdr lst)))))
+        (get-vect-loop SUPPORTED-DEVICES))         
+      (display "Sending message: ") 
+      (displayln mes)
+      (let ((frame (send-bytes-to-device message-bytes 
+                                          (dev 'get-address) 
+                                          (get-expectated-mes device-id mes)))
+             (end (- (bytevector-length frame) package-recieved-end-length)))
+        (bytevector->string frame package-recieved-data-offset end)))
+    
+    (define (send-message-to-all-devices mes)
+      (map
+       (lambda (dev)
+         (send-message-to-device (dev 'get-address) mes))
+       devices~))
     
     ;Creates a device object from an xbee-node
     (define (create-device xbee-node)
-      (define (get-device-type)
-        (define (search-dev str lst)
-          (cond ((null? lst)
-                 'not-supported)
-                ((equal? str (substring (vector-ref (car lst) 1) 0 11))
-                 (vector-ref (car lst) 0))
-                (else
-                 (search-dev str (cdr lst)))))
-        (define get-bytes (list->bytevector (map char->integer (string->list get-type-string))))
-        (define return-frame (send-bytes-to-device get-bytes (cadr xbee-node)))
-        (if (bytevector? return-frame)
-            (let ((string (bytevector->string 
-                           return-frame 
-                           package-recieved-data-offset 
-                           (- (bytevector-length return-frame) package-recieved-end-length 1))))
-              (search-dev string SUPPORTED-DEVICES))
-            (error "Error searching device type")))
-      (device-slip
-       (car xbee-node)
-       (cadr xbee-node)
-       place~
-       ;(get-device-type)))
-       'test))
+      (define (supported? type lst)
+        (cond ((null? lst) #f)
+              ((equal? type (vector-ref (car lst) 1)) #t)
+              (else (supported? type (cdr lst)))))
+      (define (get-device-type idstring)
+        (if (>= (string-length idstring) 7)
+            (substring idstring 0 7)
+            idstring))
+      (if (supported? (get-device-type (car xbee-node)))
+          (device-slip
+           (car xbee-node)
+           (cadr xbee-node)
+           place~
+           (get-device-type (car xbee-node)))
+          '()))
+    
+    (define (build-device-list)
+      (define (loop lst res)
+        (if (null? lst)
+            (set! devices~ res)
+            (loop 
+             (cdr lst)
+             (let ((dev-obj (create-device (car lst))))
+               (if (null? dev-obj)
+                   res
+                   (cons dev-obj res))))))
+      (loop (xbee-list) '()))
+    
     
     
     ;returns the list of device objects
     (define (get-device-list)
-      (set! devices~ (map create-device (xbee-list)))
+      (build-device-list)
       (map (lambda (dev)
              (dev 'serialize))
            devices~))
+    
+    ;Reconnects when master goes down
+    (define (reconnect)
+      (let ((io (tcp-accept port))
+            (in (car io))
+            (out (cdr io)))
+        (displayln "Connected over TCP/IP")
+        (loop in out xbee)))
     
     
     (define (dispatch mes . args)
       (cond 
         ((eq? mes 'has-device) (apply has-device args))
         ((eq? mes 'is-already-stored?) (is-already-stored?))
-        ((eq? mes 'add-device) (apply add-device (car args)))
         ((eq? mes 'send-message-to-device) (apply send-message-to-device args))
         ((eq? mes 'send-message-to-all-devices) (apply send-message-to-all-devices args))
         ((eq? mes 'get-device-list) (get-device-list))
@@ -310,29 +371,32 @@
           ((mes (read in))
            (devices (xbee-list)))
         (xbee-tick xbee)
+        (sleep 5e+3)
         (display "Device-list: ") (displayln devices)
-        (set! devices~ (map create-device devices))
+        (build-device-list)
         (display "Got: ")(displayln mes)
-        ;2 lets because we need to have the devices updated
-        (let ((response (dispatch (car mes) (cdr mes))))
-          (display "Response: ")(displayln response)                              
-          (write response out)
-          (newline out)
-          (flush-output out)
-          (loop in out xbee))))
-    
+        (if (eof-object? mes)
+            (begin
+              (displayln "Master went down, waiting for new")
+              (reconnect))
+            ;2 lets because we need to have the devices updated
+            (let ((response (dispatch (car mes) (cdr mes))))
+              (display "Response: ")(displayln response)                              
+              (write response out)
+              (newline out)
+              (flush-output out)
+              (loop in out xbee)))))
     
     ;listens to the steward wrapper for the messages
-    ;(let ((io (tcp-accept port))
-    ;      (in (car io))
-    ;      (out (cdr io)))
-    ;  (displayln "Connected over TCP/IP")
-    
-    (xbee-discover xbee)
-    (xbee-tick xbee)
-    (sleep)
-    (set! devices~ (map create-device (xbee-list)))
-    
-    ;  (loop in out xbee))))
-    
-    dispatch))
+    (let ((io (tcp-accept port))
+          (in (car io))
+          (out (cdr io)))
+      (displayln "Connected over TCP/IP")
+      
+      (xbee-discover xbee)
+      (sleep 5e+3)
+      (xbee-tick xbee)
+      (sleep 5e+3)
+      (build-device-list)
+      
+      (loop in out xbee))))

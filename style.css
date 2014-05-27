@@ -1,78 +1,120 @@
-/*colors
-lineblue: 4964DE
-backgroundheader blue: 9AACFC
-*/
-body{
-	margin-top: 0px;
-	margin-left:0px;
-	font-family:"Arial", sans-serif;
-}
-#heading {
-	background: #9AACFC url('./images/stripes.png') repeat;
-	padding:10px;
-    padding-right:0px;
-	height:10%;
-	width:100%;
-	}
+/*******************************************************
+TITLE: Fixed Box Layout  V1.0
+DATE: 20060809
+AUTHOR: The CSS Tinderbox - http://www.csstinderbox.com
+*******************************************************/
 
-#heading h1{
-	margin:0px;
+body {
+margin:3em;
+padding:0;
+height:100%;
+background-color:#ffffff;
+color:#000000;  
+text-align:center;
+font-family:Arial, Helvetica, sans-serif;
+font-size:.9em;
 }
-#heading a {
-	color:grey;
-	text-decoration:none;
-	}
+
+a {
+color:#cc0000;
+text-decoration:underline;
+}
+
+a:hover {
+color:#eeeeee;
+text-decoration:none;
+}
+
+blockquote {
+margin:1em;
+padding:.5em;
+background-color:#eeeeee;
+border-top:1px solid #cccccc;
+border-bottom:1px solid #cccccc;
+}
+
+blockquote p {
+margin:.2em;
+}
+
+#centerColumn { 	
+margin:0 auto;
+padding:1em;
+width:38em;
+text-align:left;
+vertical-align: middle;	
+background-color:#cccccc;
+border:1px solid #999999;
+}
+
+#centerColumn h2 {
+margin:0 0 -.5em 0;
+padding:.75em 0 0 0;
+font-size:1em;
+letter-spacing:.1em;
+}
+
+#header {
+margin:-1em -1em 0 -1em;
+padding:0 0 0 0;
+height:5em;
+background-color:#ffffff;
+}
+
+#header h1 {
+margin:0 0 -.6em 0;
+padding:.5em 0 0 1em;
+font-size:1.5em;
+letter-spacing:.1em;
+}
+
+#header h2 {
+margin:0 0 0 0;
+padding:1em 0 0 1.75em;
+font-size:.9em;
+font-weight:300;
+letter-spacing:.1em;
+}
+
 #menu {
-	margin-top:1.4%;
-}
-#menu ul{
-	margin-bottom:-10px; /*must be equal to padding heading*/
-	padding:0px;
-}
-#menu li{
-	border-top: 1px solid black;
-	border-left: 1px solid black;
-	border-right: 1px solid black;
-	display:inline;
-	list-style-type:none;
-    	margin-right:-1px;
-	padding:4px;
-	padding-bottom:1px;
-	background-color:#9AACFC;
-}
-#menu li :hover {
-    background-color: #9AACFC;
-}
-#menu a{
-	color: black;
-}
-#main {
-    margin: 10px;
-    background-color:white;
-	border:groove;
-	height:80%;
+margin:0 0 1em 0;
+padding:.4em 0 0 0;
 }
 
-td {
-	padding:4px;
-	border-bottom: 1px solid black;
-
+#menu ul {
+margin:0;
+padding:0;
+list-style:none;
 }
 
-th{
-      text-align:left;
+#menu li {
+margin:0;
+padding:.25em;
+display:inline;
 }
 
-input {
-      margin: 0px;
-      border: 1px solid #9AACFC;
+#footer {
+position:relative;
+bottom:0;
+margin:5em 0 0 0;
+padding:0;
+height:4em;
+line-height:4em;
+text-align:center;
+font-size:.7em;
+background-color:#cccccc;
+border-top:1px solid #999999;
 }
 
-button {
-      color:white;
-      background-color: white;
-      border:0;
-}
+
+
+
+
+
+
+
+
+
 
 
 
