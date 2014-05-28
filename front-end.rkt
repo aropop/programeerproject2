@@ -78,12 +78,13 @@
           [(equal? page "actions")
            (let* ([actions  (send master~ get-actions)]
                   [device-ids 
-                   (map (lambda (steward)
-                          (map 
-                           (lambda (device)
-                             (get-field id~ device))
-                           (send steward get-devices)))
-                        (send master~ get-stewards))]
+                   (foldl append '()
+                          (map (lambda (steward)
+                                 (map 
+                                  (lambda (device)
+                                    (get-field id~ device))
+                                  (send steward get-devices)))
+                               (send master~ get-stewards)))]
                   [equalities (send action$ get-equality-list)])
              (set! inside-main (include-template "templates/actions.html")))]
           

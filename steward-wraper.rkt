@@ -51,7 +51,6 @@
          (send-to-pi mes)]
         ;Make sure an other thread isn't sending, scheduling will switch sometime so no deadlocks
         [communication-lock~
-         (newline)
          (send-to-pi mes)]
         [else
          (set! communication-lock~ #t)
@@ -116,12 +115,11 @@
     (define/public (get-devices-force-discovery)
       (define (device-vector->device-obj vect)
         (if (has-device? (vector-ref vect 1))
-            (begin
               (let ((d (get-device (vector-ref vect 1))))
-                (unless (get-field is-found?~ d)
+                (when (not (get-field is-found?~ d))
                   (set-field! is-found?~ d #t)
                   (set-field! last-status~ d "Found, loading status..."))
-                d)); Get existing device
+                d); Get existing device
             (new device-wrapper%
                  [place~ (vector-ref vect 3)]
                  [com-adr~ (vector-ref vect 2)]

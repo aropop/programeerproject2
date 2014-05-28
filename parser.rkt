@@ -32,8 +32,7 @@
                    ([tuples (string-split string ",")]
                     [splitted (map (lambda (s) (string-split s "=")) tuples)])
                  (map
-                  (lambda (2-list)
-                    (display (list-ref 2-list 0)) (display "---") (display (list-ref 2-list 1)) (newline)
+                  (lambda (2-list)                    
                     (new typed-data%
                          [name (list-ref 2-list 0)]
                          [value (list-ref 2-list 1)]

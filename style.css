@@ -1,8 +1,3 @@
-/*******************************************************
-TITLE: Fixed Box Layout  V1.0
-DATE: 20060809
-AUTHOR: The CSS Tinderbox - http://www.csstinderbox.com
-*******************************************************/
 
 body {
 margin:3em;
@@ -40,7 +35,7 @@ margin:.2em;
 #centerColumn { 	
 margin:0 auto;
 padding:1em;
-width:38em;
+width:800px;
 text-align:left;
 vertical-align: middle;	
 background-color:#cccccc;
@@ -106,6 +101,10 @@ background-color:#cccccc;
 border-top:1px solid #999999;
 }
 
+td{
+text-align: center;
+padding:5px;
+}
 
 
 

@@ -5,7 +5,7 @@
 <th>ID</th>
 <th>Type</th>
 <th>Room</th>
-<th>Communication Address</th>
+<th>Type</th>
 <th>Status</th>
 </tr>
 @in[s stewards]{
@@ -14,7 +14,7 @@
 <td>@(get-field id~ d)</td>
 <td>@(get-field type~ d)</td>
 <td>@(get-field place~ d)</td>
-<td>@(send d get-com-adr-as-string)</td>
+<td>@(get-field type~ d)</td>
 <td><div id="@(get-field id~ d)" class="ToEdit">
 @(cond ((and (send s online?) (list? (send s get-device-status (get-field id~ d))))
         (foldl string-append ""
