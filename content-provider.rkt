@@ -65,7 +65,9 @@
                         (send action-data get-current-row-colum 1)
                         (send action-data get-current-row-colum 2)
                         (send action-data get-current-row-colum 3)
-                        (send action-data get-current-row-colum 4))
+                        (send action-data get-current-row-colum 4)
+                        (send action-data get-current-row-colum 5)
+                        (send action-data get-current-row-colum 6))
                        action-list)))))))
     
     
@@ -104,9 +106,9 @@
     
     ;Returns all data in the dated data type
     (define/public (get-all-data)
-      (let* ([query "SELECT date, type, value, device_id FROM Data"]
+      (let* ([query "SELECT date, type, value, device_id FROM Data ORDER BY date ASC"]
              [result (send db-manager~ execute/return query)])
-        (if (not(= (send result number-rows) 0))
+        (if (not (= (send result number-rows) 0))
             (handle-data-result result)
             '())))
     
@@ -114,7 +116,7 @@
     (define/public (get-data-for-type type)
       (let* ([query (string-append 
                      "SELECT date, type, value, device_id FROM Data WHERE type='" 
-                     (symbol->string type) "'")]
+                     (symbol->string type) "' ORDER BY date ASC")]
              [result (send db-manager~ execute/return query)])
         (handle-data-result result)))
     

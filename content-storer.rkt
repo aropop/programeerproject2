@@ -43,4 +43,7 @@
                  (send
                   database-manager~
                   execute/no-return
-                  possible-cons)]))))))
+                  possible-cons)]))))
+    
+    (define/public (unstore something)
+      (send database-manager~ execute/no-return (send something delete-sql)))))

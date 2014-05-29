@@ -103,7 +103,8 @@ border-top:1px solid #999999;
 
 td{
 text-align: center;
-padding:5px;
+padding-top:5px;
+padding-bottom:5px;
 }
 
 

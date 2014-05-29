@@ -106,6 +106,26 @@
     (define/public (get-actions)
       actions~)
     
+    ;Add a new action
+    (define/public (add-action ac)
+      (send content-storer~ store ac)
+      (set! actions~ (cons ac actions~)))
+    
+    ;Deletes an action
+    (define/public (delete-action id)
+      (define action-to-delete '())
+      (set! actions~ (filter
+                      (lambda (act)
+                        (if (= (get-field action-id~ act) id)
+                            (begin
+                              (set! action-to-delete act)
+                              #f)
+                            #t))
+                      actions~))
+      (when (null? action-to-delete)
+        (error "Cannot delete action id:" id))
+      (send content-storer~ unstore action-to-delete))
+    
     
     ;returns the steward which has the device 
     ;this adds an extra check whith correct error handling

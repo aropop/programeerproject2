@@ -5,27 +5,34 @@ var type = document.getElementById("actionTypeInput").value;
 var value = document.getElementById("actionValueInput").value;
 var command = document.getElementById("actionCommandInput").value;
 var equality = document.getElementById("actionEqualityInput").value;
-var device = document.getElementById("actionDeviceInput").value;
+var ddevice = document.getElementById("actionDestinationDeviceInput").value;
+var sdevice = document.getElementById("actionSourceDeviceInput").value;
 
 document.addActionForm.actionValue.value = value;
 document.addActionForm.actionType.value = type;
 document.addActionForm.actionCommand.value = command;
 document.addActionForm.actionEquality.value = equality;
-document.addActionForm.actionDevice.value = device;
+document.addActionForm.actionDestinationDevice.value = ddevice;
+document.addActionForm.actionSourceDevice.value = sdevice;
 document.addActionForm.submit();
 }
 
 </script>
-
+<!-- Succes or fail messages -->
+@in[m message]{
+<p id="message">@|m|</p>
+}
 <!-- steward table template -->
 <table id="steward-table">
 <tr>
 <th>ID</th>
-<th>Type</th>
-<th>Value</th>
-<th>Command</th>
-<th>Device-id</th>
+<th style="width:10px">Type</th>
+<th style="width:10px">Value</th>
+<th style="width:10px">Command</th>
+<th>Destination Device-id</th>
+<th>Source Device-id</th>
 <th>Equality</th>
+<th></th>
 </tr>
 @in[a actions]{
 <tr>
@@ -33,8 +40,10 @@ document.addActionForm.submit();
 <td> @(get-field type~ a) </td>
 <td> @(get-field value~ a) </td>
 <td> @(get-field command~ a) </td>
-<td> @(get-field device-id~ a) </td>
+<td> @(get-field destination-device-id~ a) </td>
+<td> @(get-field source-device-id~ a) </td>
 <td> @(send a get-equality-string) </td>
+<td><a href="?page=deleteAction&id=@(get-field action-id~ a)"><image src="/images/delete.png" /></a></td>
 </tr>
 }
 
@@ -47,17 +56,23 @@ comes with some more difficulties. Because we can't use a form as the last row
 we make a small hidden form and on submit make all the values of the hidden inputs
 equal to those in the visible ones -->
 <td>Add</td>
-<td><input type="text" id="actionTypeInput"/></td>
-<td><input type="text" id="actionValueInput"/></td>
-<td><input type="text" id="actionCommandInput"/></td>
+<td><input size="4" type="text" id="actionTypeInput"/></td>
+<td><input size="4" type="text" id="actionValueInput"/></td>
+<td><input size="10" type="text" id="actionCommandInput"/></td>
 <td> 
-<select id="actionDeviceInput">
+<select id="actionDestinationDeviceInput">
 @in[d device-ids]{
 <option name="@|d|">@|d|</option>
 }
 </select></td>
 <td> 
-<!-- the inputo of this table div will be changed when the user selects add new
+<select id="actionSourceDeviceInput">
+@in[d device-ids]{
+<option name="@|d|">@|d|</option>
+}
+</select></td>
+<td> 
+<!-- the input of this table div will be changed when the user selects add new
  equalities -->
 <select id="actionEqualityInput">
 @in[e equalities]{
@@ -71,9 +86,9 @@ equal to those in the visible ones -->
 <input type="hidden" name="actionType"/>
 <input type="hidden" name="actionValue" />
 <input type="hidden" name="actionCommand" />
-<input type="hidden" name="actionDevice" />
+<input type="hidden" name="actionDestinationDevice" />
+<input type="hidden" name="actionSourceDevice" />
 <input type="hidden" name="actionEquality" /></form>
-<br />
 <button onclick="setEqual()"><image src="/images/add.gif" /></button>
 </td> 
 </tr>

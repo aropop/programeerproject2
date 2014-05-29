@@ -59,6 +59,12 @@
     
     ;unparses list of dated objects to json expressions
     (define/public (unparse-to-json list-of-dated-objects time-diff) ;time-diff is a symbol day, month, year
+      (define filter-val
+        (cond [(eq? time-diff 'month) (send (car list-of-dated-objects) get-year)]
+              [(eq? time-diff 'day) (send (car list-of-dated-objects) get-month)]
+              [(eq? time-diff 'hour) (send (car list-of-dated-objects) get-days)]
+              [(eq? time-diff 'minute) (send (car list-of-dated-objects) get-hours)]
+              [else '()]))
       (define (add-string-loop hash-table current-object get-proc) ;adds to the has the data of the current data object
         (let ([cur-str (if (hash-has-key? hash-table (send current-object get-name))
                            (hash-ref hash-table (send current-object get-name))
@@ -72,8 +78,7 @@
                              (hash-set! hash-table ;initialise the string
                                         (send current-object get-name)
                                         init-str)
-                             init-str))
-                       ]
+                             init-str))]
               [str (string-append "[" (get-proc current-object) ", "
                                   (number->string
                                    (send current-object get-value-as-number))
@@ -83,35 +88,57 @@
                      (string-append
                       cur-str ;longest string first for performance
                       str))))
-      (define built-hash-table (let 
-                                   loop
-                                 ([json-hash-table (make-hash)]
-                                  [remaining-dated-objects list-of-dated-objects])
-                                 ;cond to test if empty
-                                 (cond 
-                                   [(empty? remaining-dated-objects)
-                                    json-hash-table]
-                                   [else
-                                    ;make new conditional to determine which proc to use for unparsing
-                                    (let ([proc (lambda (obj) ;default is a day
-                                                  (send obj get-days))])
-                                      (cond
-                                        [(eq? time-diff 'year)
-                                         (set! proc (lambda (obj)
-                                                      (send obj get-year)))]
-                                        [(eq? time-diff 'month)
-                                         (set! proc (lambda (obj)
-                                                      (send obj get-month)))]
-                                        [(eq? time-diff 'hour)
-                                         (set! proc (lambda (obj)
-                                                      (send obj get-hours)))]
-                                        [(eq? time-diff 'minute)
-                                         (set! proc (lambda (obj)
-                                                      (send obj get-minutes)))] )
-                                      (add-string-loop json-hash-table 
-                                                       (car remaining-dated-objects) 
-                                                       proc)
-                                      (loop json-hash-table (cdr remaining-dated-objects)))])))
+      (define built-hash-table ;maps name of an object to its data string
+        (let 
+            loop
+          ([json-hash-table (make-hash)]
+           [remaining-dated-objects list-of-dated-objects])
+          ;cond to test if empty
+          (cond 
+            [(empty? remaining-dated-objects)
+             json-hash-table]
+            [else
+             ;make new conditional to determine which proc to use for unparsing
+             (let ([proc (lambda (obj) ;default is a day
+                           (send obj get-days))]
+                   [filter-proc (lambda (obj)
+                                  (if (null? filter-val)
+                                      #t
+                                      (equal? filter-val (send obj get-month))))])
+               (cond
+                 [(eq? time-diff 'year)
+                  (set! proc (lambda (obj)
+                               (send obj get-year)))
+                  (set! filter-proc (lambda (obj) #t))]
+                 [(eq? time-diff 'month)
+                  (set! proc (lambda (obj)
+                               (send obj get-month)))
+                  (set! filter-proc (lambda (obj)
+                                      (if (null? filter-val)
+                                          #t
+                                          (equal? filter-val (send obj get-year)))))]
+                 [(eq? time-diff 'hour)
+                  (set! proc (lambda (obj)
+                               (send obj get-hours)))
+                  (set! filter-proc (lambda (obj)
+                                      (if (null? filter-val)
+                                          #t
+                                          (equal? filter-val (send obj get-days)))))]
+                 [(eq? time-diff 'minute)
+                  (set! proc (lambda (obj)
+                               (send obj get-minutes)))
+                  (set! filter-proc (lambda (obj)
+                                      (if (null? filter-val)
+                                          #t
+                                          (equal? filter-val (send obj get-hours)))))])
+               ;only add when we are in the last of the time unit above
+               ;This fixes the issue that 2 objects of the same minute but diffrent hour are in the
+               ;same graph
+               (when (filter-proc (car remaining-dated-objects))
+                 (add-string-loop json-hash-table 
+                                  (car remaining-dated-objects) 
+                                  proc))
+               (loop json-hash-table (cdr remaining-dated-objects)))])))
       (define return-string "")
       ;we have to map to remove excess "," and add "]"
       (hash-map

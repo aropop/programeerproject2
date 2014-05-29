@@ -93,10 +93,8 @@
      (to-number-lambda string->number)
      (type~ ;example temperature
       (cond
-        [(equal? (substring value~
-                            (- (string-length value~) 2)
-                            (string-length value~)) 
-                 "°C")
+        [(equal? name~ 
+                 "TEM")
          (set! to-number-lambda (lambda (s) (string->number (substring s 0 (- (string-length value~) 2)))))
          "temperature"]
         [(equal? (substring value~
@@ -201,13 +199,7 @@
       (substring date 5 7))
     
     (define/public (get-year)
-      (substring date 0 4))
-    
-
-    
-    
-    )
-  )
+      (substring date 0 4))))
 
 
 

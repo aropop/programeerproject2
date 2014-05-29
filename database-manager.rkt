@@ -34,7 +34,7 @@ data_id INTEGER PRIMARY KEY ASC AUTOINCREMENT,
 date DATETIME DEFAULT CURRENT_TIMESTAMP,
 type VARCHAR(20) NOT NULL,
 value TEXT NOT NULL,
-device_id INT REFERENCES Device(device_id) ON UPDATE CASCADE ON DELETE SET NULL
+device_id VARCHAR(30) REFERENCES Device(device_id) ON UPDATE CASCADE ON DELETE SET NULL
 );"
         
         "CREATE TABLE Steward (
@@ -44,21 +44,21 @@ port INT NOT NULL,
 room_name VARCHAR(30) REFERENCES Room(name) ON UPDATE CASCADE ON DELETE SET NULL
 );"
         
-         "CREATE TABLE Action (
+        "CREATE TABLE Action (
 action_id INTEGER PRIMARY KEY ASC AUTOINCREMENT,
 type VARCHAR(15) NOT NULL,
 value VARCHAR(15) NOT NULL,
 command VARCHAR(30) NOT NULL,
 equality VARCHAR(4) NOT NULL,
-port INT NOT NULL,
-device_id VARCHAR(30) REFERENCES Device(device_id) ON UPDATE CASCADE ON DELETE SET NULL
+destination_device_id VARCHAR(30) NOT NULL,
+source_device_id VARCHAR(30) NOT NULL
 );"
         
         "CREATE TABLE Device (
 device_id VARCHAR(30) PRIMARY KEY,
 type VARCHAR(20) NOT NULL,
-communication_address VARCHAR(50) NOT NULL,
-steward_id INT REFERENCES Steward(steward_id) ON UPDATE RESTRICT ON DELETE CASCADE
+communication_address VARCHAR(50),
+steward_id INTEGER REFERENCES Steward(steward_id) ON UPDATE RESTRICT ON DELETE CASCADE
 );" 
         (when (not (null? (get-field standard-rooms SETTINGS)))
           (let ((room-query "INSERT INTO Room")
@@ -76,19 +76,37 @@ steward_id INT REFERENCES Steward(steward_id) ON UPDATE RESTRICT ON DELETE CASCA
     (define/public (execute/no-return sql)
       (if initialized~
           ;save last query so we can get additional info 
-          (set! last-query~ (query con~ sql)) 
+          (with-handlers ((exn:fail:sql? (lambda (e)
+                                           (display "Failed to execute (with no return)")
+                                           (newline)
+                                           (display "SQL: '") (display sql) (display "'")
+                                           (newline)
+                                           (display "State: ") (display (exn:fail:sql-sqlstate e))
+                                           (newline)
+                                           (display "Info: ") (newline)
+                                           (map displayln (exn:fail:sql-info e))
+                                           (raise "Quit"))))
+            (set! last-query~ (query con~ sql))) 
           (begin (do-init-tests)
                  (execute/no-return sql))))
     
     ;select queries where you expect a return
     (define/public (execute/return sql)
       (if initialized~
-          (new db-table-data% 
-               [query-result (query-rows con~ sql)])
+          (with-handlers ((exn:fail:sql? (lambda (e)
+                                           (display "Failed to execute (with return)")
+                                           (newline)
+                                           (display "SQL: '") (display sql) (display "'")
+                                           (newline)
+                                           (display "State: ") (display (exn:fail:sql-sqlstate e))
+                                           (newline)
+                                           (display "Info: ") (newline)
+                                           (map displayln (exn:fail:sql-info e))
+                                           (raise "Quit"))))
+            (new db-table-data% 
+                 [query-result (query-rows con~ sql)]))
           (begin (do-init-tests)
-                 (execute/return sql))
-          )
-      )
+                 (execute/return sql))))
     
     ;Returns the last inserted id after an insert operation
     ;More info on simple restult structs 
@@ -106,8 +124,7 @@ steward_id INT REFERENCES Steward(steward_id) ON UPDATE RESTRICT ON DELETE CASCA
             (map (lambda (install-query)
                    (execute/no-return install-query))
                  install-query~))
-          (set! initialized~ #t))
-      )
+          (set! initialized~ #t)))
     
     (define/private (is-table-installed?)
       (if (and       
@@ -118,6 +135,5 @@ steward_id INT REFERENCES Steward(steward_id) ON UPDATE RESTRICT ON DELETE CASCA
            (table-exists? con~ "Steward")
            (table-exists? con~ "Room")
            (table-exists? con~ "Device")
-           (table-exists? con~ "Data")
-           )
+           (table-exists? con~ "Data"))
           (error "Database error, no connection!")))))
