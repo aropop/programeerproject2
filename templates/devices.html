@@ -1,4 +1,15 @@
 <!-- devices template -->
+<script type="text/javascript">
+function sendMessage(id){
+var a = document.getElementById("sendMesIn"+id).value;
+var i = document.getElementById("sendMesTd"+id);
+i.innerHTML = "Loading..";
+jQuery.get("?page=sendMessageToDevice&id=" + id + "&mes=" + a, function(data, status){
+    i.innerHTML = data;
+});
+}
+
+</script>
 <p id="description">Devices in the system</p>
 <table>
 <tr>
@@ -7,6 +18,7 @@
 <th>Room</th>
 <th>Type</th>
 <th>Status</th>
+<th>Send Message</th>
 </tr>
 @in[s stewards]{
 @in[d (send s get-devices)]{
@@ -24,10 +36,10 @@
        ((send s online?)
         (send s get-device-status (get-field id~ d)))
        (else "OFFLINE"))</div></td>
+<td id="sendMesTd@(get-field id~ d)"><input size="10" type="text" value="" id="sendMesIn@(get-field id~ d)" /><button onclick="sendMessage('@(get-field id~ d)')">Send</button></td>
 </tr>
 }
 }
-
 </table>
 
 

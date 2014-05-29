@@ -47,7 +47,10 @@
       (lambda (name value) (new generic-data% [name name] [value value])))
     
     (define/public (get-sql)
-      "SELECT type, value FROM Data WHERE data_id=")))
+      "SELECT type, value FROM Data WHERE data_id=")
+    
+    (define/public (delete-sql)
+      "")))
 
 
 ;Represents the return of a call

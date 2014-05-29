@@ -115,11 +115,11 @@
     (define/public (get-devices-force-discovery)
       (define (device-vector->device-obj vect)
         (if (has-device? (vector-ref vect 1))
-              (let ((d (get-device (vector-ref vect 1))))
-                (when (not (get-field is-found?~ d))
-                  (set-field! is-found?~ d #t)
-                  (set-field! last-status~ d "Found, loading status..."))
-                d); Get existing device
+            (let ((d (get-device (vector-ref vect 1))))
+              (when (not (get-field is-found?~ d))
+                (set-field! is-found?~ d #t)
+                (set-field! last-status~ d "Found, loading status..."))
+              d); Get existing device
             (new device-wrapper%
                  [place~ (vector-ref vect 3)]
                  [com-adr~ (vector-ref vect 2)]
@@ -157,10 +157,11 @@
     
     (define/public (get-devices-status-force-message device-id)
       (define dev (get-device device-id))
-      (set-field! last-status~ dev (send parser$
-                                         parse-message
-                                         (send-to-pi `(send-message-to-device ,device-id "GET"))
-                                         device-id)))
+      (when (online?)
+        (set-field! last-status~ dev (send parser$
+                                           parse-message
+                                           (send-to-pi `(send-message-to-device ,device-id "GET"))
+                                           device-id))))
     
     (define/public (message-all-devices mes)
       (send-to-pi `(send-message-to-all-devices ,mes)))
@@ -224,6 +225,9 @@
     
     (define/public (get-sql)
       "SELECT steward_id, room_name, ip, port FROM Steward")
+    
+    (define/public (delete-sql)
+      (string-append "DELETE FROM Steward WHERE steward_id=" (number->string steward-id~)))
     
     ;initialisation
     (when (not (equal? ip~ "static"))

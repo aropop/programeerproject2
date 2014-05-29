@@ -120,7 +120,7 @@
             ;Recieve options 1
             1
             ;Data packet
-            97 99 107 32 115 101 116 32 112 111 119 61 111 110 10 ;ack set pow=on
+            97 99 107 58 32 115 101 116 32 112 111 119 61 111 110 10 ;ack: set pow=on
             ;line feeds 
             10 10)
            (vector 0 0 0 0 0 0 0 1)
@@ -138,7 +138,7 @@
             ;Recieve options 1
             1
             ;Data packet
-            97 99 107 32 115 101 116 32 112 111 119 61 111 102 102 10 ;ack set pow=off
+            97 99 107 58 32 115 101 116 32 112 111 119 61 111 102 102 10 ;ack set pow=off
             ;line feeds 
             10 10)
            (vector 0 0 0 0 0 0 0 1)
@@ -229,7 +229,6 @@
 (define xbee-list xbee-list-nodes)
 
 (define (xbee-read-frame xb)
-  (display ANSWERS) (newline)
   (if (null? ANSWERS)
       0
       (let ((ret (car ANSWERS)))

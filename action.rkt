@@ -44,16 +44,17 @@
     (define/private (already-stored?)
       (= -1 action-id~))
     
-    (define/public (execute steward)
+    (define/public (execute steward-des steward-so)
       (define (check&execute d-o)
         (define v (send d-o get-value-as-number))
         (when (equality~ v value~)
           (displayln (string-append "Executed action id:" (number->string action-id~)))
-          (send steward send-message-to-remote destination-device-id~ command~)))
+          (send steward-des send-message-to-device destination-device-id~ command~)))
       (let get-right-data
-        ((lst (send steward get-device-status source-device-id~)))
+        ((lst (send steward-so get-device-status source-device-id~)))
         (cond
           [(null? lst) 'do-nothing]
+          [(string? lst) 'do-nothing]
           [(equal? (send (car lst) get-name) type~) (check&execute (car lst))]
           [else (get-right-data (cdr lst))])))
     
@@ -69,7 +70,7 @@
       (let ([query (string-append
                     "INSERT INTO Action (type, value, destination_device_id, source_device_id,"
                     "command, equality) VALUES ('"
-                    type~ "', '" value~"', '" destination-device-id~ "', '"
+                    type~ "', '" (number->string value~) "', '" destination-device-id~ "', '"
                     source-device-id~ "', '" command~
                     "', '" (serialize-eq equality~) "')")]
             [update-lambda (lambda (new-id content-storer)
@@ -82,7 +83,7 @@
       (lambda (type value d-device-id s-device-id command eq-string action-id) 
         (new action% ;make a wrapper will connect when needed
              [type~ type]
-             [value~ value]
+             [value~ (string->number value)]
              [destination-device-id~ d-device-id]
              [source-device-id~ s-device-id]
              [command~ command]
@@ -91,7 +92,10 @@
     
     (define/public (get-sql)
       "SELECT type, value, destination_device_id, source_device_id, command, equality, action_id
- FROM Action")))
+ FROM Action")
+    
+    (define/public (delete-sql)
+      (string-append "DELETE FROM Action WHERE action_id=" (number->string action-id~)))))
 
 (define action$ (new action%
                      [type~ 'none]

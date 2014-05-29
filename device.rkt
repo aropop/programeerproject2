@@ -80,6 +80,8 @@
     (define/public (get-sql)
       "SELECT device_id, communication_address, type FROM Device WHERE steward_id=")
     
+    (define/public (delete-sql)
+      (string-append "DELETE FROM Device WHERE device_id=" id~))
     
     (define/public (create-lambda)
       (lambda (id com-adr type st place)
@@ -89,8 +91,7 @@
              [com-adr~ (deserialize-com-adr com-adr)]
              [type~ type]
              [steward-wrapper~ st]
-             [is-stored?~ #t])))
-    (display "testtest:") (displayln com-adr~)))
+             [is-stored?~ #t])))))
 
 (define device-wrapper$ (new device-wrapper%
                              [id~ 0]

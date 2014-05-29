@@ -53,6 +53,7 @@
                                        (if (> (- (current-milliseconds) x) 
                                               (get-field data-get-interval SETTINGS))
                                            (begin (collect-data)
+                                                  (check-actions)
                                                   (set! x (current-milliseconds))
                                                   (loop))
                                            (loop))))))
@@ -190,9 +191,11 @@
     (define/private (check-actions)
       (map
        (lambda (action)
-         (let ((steward (get-steward-for-device
-                         (get-field device-id~ action))))
-         (send action execute steward)))
+         (let ([steward-d (get-steward-for-device
+                         (get-field destination-device-id~ action))]
+               [steward-s (get-steward-for-device
+                         (get-field source-device-id~ action))])
+         (send action execute steward-d steward-s)))
        actions~)
       (display "Checked all actions")
       (newline))

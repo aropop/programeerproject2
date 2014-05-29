@@ -112,10 +112,11 @@
              [(equal? page "deleteAction")
               (let* ([bindings (request-bindings requests)]
                      [action-id (string->number (extract-binding/single 'id bindings))])
+                (send master~ delete-action action-id)
                 (get-inside-main-loop "actions"
                                                      head
                                                      heading
-                                                     "Succesfully deleted action" 
+                                                     '("Succesfully deleted action")
                                                      inside-main
                                                      answer-type
                                                      data))]
@@ -129,11 +130,11 @@
                 (set! response (get-inside-main-loop "stewards"
                                                      head
                                                      heading
-                                                     (string-append "Succesfully added steward on ip: '" 
+                                                     (list (string-append "Succesfully added steward on ip: '" 
                                                                     ip
                                                                     ":"
                                                                     port
-                                                                    "'") 
+                                                                    "'")) 
                                                      inside-main
                                                      answer-type
                                                      data)))]
@@ -153,7 +154,7 @@
                 (get-inside-main-loop "actions"
                                                      head
                                                      heading
-                                                     "Succesfully added action" 
+                                                     '("Succesfully added action")
                                                      inside-main
                                                      answer-type
                                                      data))]
@@ -196,6 +197,15 @@
                    [steward (send master~ get-steward (string->number s-id))]
                    [data-t (send steward get-devices-count)])
                 (set! data (if (number? data-t) (number->string data-t) data-t)))]
+             
+             [(equal? page "sendMessageToDevice")
+              (set! answer-type 'simple-data)
+              (let* 
+                  ([device-id (extract-binding/single 'id (request-bindings requests))]
+                   [message (extract-binding/single 'mes (request-bindings requests))]
+                   [steward (send master~ get-steward-for-device device-id)]
+                   [data-t (send steward send-message-to-device device-id message)])
+                (set! data data-t))]
              
              [(equal? page "data_whole_system") ; bug with minute data of diffrent hours is shown
               (let* ([unparsed-data (send master~ get-data 'all)]

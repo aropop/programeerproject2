@@ -7,4 +7,5 @@
   (interface ()
     store-sql
     create-lambda
-    get-sql))
+    get-sql
+    delete-sql))

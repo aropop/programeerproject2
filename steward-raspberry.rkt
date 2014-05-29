@@ -211,8 +211,6 @@
     (define (send-bytes-to-device bytes adr content-expectation)
       (define last-good-frame 'null)
       (define (content-satisfies? message-string)
-        ;(displayln message-string)
-        ;(displayln content-expectation)
         (or
          (symbol? content-expectation)
          (and 
@@ -240,7 +238,6 @@
           (cond
             
             ((eq? current-frame 'no-more)
-             (displayln "test1")
              (if (eq? 'null last-good-frame)
                  (begin 
                    (displayln "Could not find anything retrying")
@@ -291,7 +288,7 @@
         (define (search-mes lst)
           (cond ((null? lst) 'nothing)
                 ((equal? (caar lst) me) (cdar lst))
-                (else (cdr lst))))
+                (else (search-mes (cdr lst)))))
         (define (get-vect-loop lst)
           (cond ((null? lst) 'nothing)
                 ((equal? (vector-ref (car lst) 1) type) (search-mes (vector-ref (car lst) 3)))
@@ -299,6 +296,7 @@
         (get-vect-loop SUPPORTED-DEVICES))         
       (display "Sending message: ") 
       (displayln mes)
+      (displayln (get-expectated-mes mes))
       ;* only in r5rs
       (let* ((frame (send-bytes-to-device message-bytes 
                                           (dev 'get-address) 
