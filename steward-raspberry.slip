@@ -32,7 +32,7 @@
        (steward-id~ id)
        (place~ "none")
        ;private
-       (xbee (xbee-init "/dev/ttyUSB0" 9600)))  
+       (xbee (xbee-init "/dev/ttyUSB0" 9600)))
     
     
     ;Help procedure to facilitate debuging
@@ -191,12 +191,6 @@
             (lp (- i 1) (cons (string-ref str i) lst))))
       (lp (- l 1) '()))
     
-    ;Adds a device
-    ;Device should be a list whith the arguments to make an raspberry device ADT
-    (define (add-device device-list)
-      (let ((device (apply device-list device-slip))) 
-        (set! devices~ (cons device devices~))))
-    
     ;Converts a message into a bytevector to send
     (define (string->bytevector string)
       (list->bytevector (map char->integer (string->list string)))) 
@@ -206,8 +200,6 @@
     (define (send-bytes-to-device bytes adr content-expectation)
       (define last-good-frame 'null)
       (define (content-satisfies? message-string)
-        (displayln message-string)
-        (displayln content-expectation)
         (or
          (symbol? content-expectation)
          (and 
@@ -284,7 +276,7 @@
         (define (search-mes lst)
           (cond ((null? lst) 'nothing)
                 ((equal? (caar lst) me) (cdar lst))
-                (else (cdr lst))))
+                (else (search-mes (cdr lst)))))
         (define (get-vect-loop lst)
           (cond ((null? lst) 'nothing)
                 ((equal? (vector-ref (car lst) 1) type) (search-mes (vector-ref (car lst) 3)))
@@ -294,7 +286,7 @@
       (displayln mes)
       (let ((frame (send-bytes-to-device message-bytes 
                                           (dev 'get-address) 
-                                          (get-expectated-mes device-id mes)))
+                                          (get-expectated-mes mes)))
              (end (- (bytevector-length frame) package-recieved-end-length)))
         (bytevector->string frame package-recieved-data-offset end)))
     
@@ -314,7 +306,7 @@
         (if (>= (string-length idstring) 7)
             (substring idstring 0 7)
             idstring))
-      (if (supported? (get-device-type (car xbee-node)))
+      (if (supported? (get-device-type (car xbee-node)) SUPPORTED-DEVICES)
           (device-slip
            (car xbee-node)
            (cadr xbee-node)
@@ -361,7 +353,7 @@
         ((eq? mes 'get-device-list) (get-device-list))
         ((eq? mes 'set-id!) (apply set-id! (car args)))
         ((eq? mes 'set-place) (apply set-place! args))
-        (else (displayln mes) 
+        (else (display "Unknown Message :")(displayln mes) 
               '(Unknown Message))))
     
     

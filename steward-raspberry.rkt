@@ -259,8 +259,7 @@
                                                          package-recieved-data-offset 
                                                          (- (bytevector-length current-frame) 
                                                             package-recieved-end-length)))
-                 (begin 
-                   (set! last-good-frame current-frame)))
+                 (set! last-good-frame current-frame))
              (read-loop))
             ;Transmit info package
             ((= (frame-type current-frame) package-transmit-info-code)
