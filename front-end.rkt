@@ -169,8 +169,7 @@
                      [amount_data (send master~ get-facts 'amount-data)]
                      [number_stewards (length room_tuple)]
                      [number_devices (send master~ get-facts 'amount-devices)]
-                     [last_stored_data (send master~ get-facts 'last-stored-data)]
-                     )
+                     [last_stored_data (send master~ get-facts 'last-stored-data)])
                 (set! inside-main (include-template "templates/data-start.html")))]
              
              [(equal? page "getDeviceStatus")
@@ -207,8 +206,22 @@
                    [data-t (send steward send-message-to-device device-id message)])
                 (set! data data-t))]
              
-             [(equal? page "data_whole_system") ; bug with minute data of diffrent hours is shown
+             [(equal? page "data_whole_system") 
               (let* ([unparsed-data (send master~ get-data 'all)]
+                     [s-id '()]
+                     [current-time-diff (string->symbol (extract-binding/single 'time_diff (request-bindings requests)))]
+                     [json-data (if (null? unparsed-data) 
+                                    ""
+                                    (send parser$ unparse-to-json unparsed-data current-time-diff))]
+                     [time-diffs '((minute . "Minutes") (hour . "Hours") (day . "Days") (month . "Months") (year . "Years"))]
+                     [current-page page]
+                     [jquery "/js/jquery.min.js"]
+                     [flot-js "/js/jquery.flot.min.js"])
+                (set! inside-main (include-template "templates/graph.html")))]
+             
+             [(equal? page "data_single_room") 
+              (let* ([s-id (extract-binding/single 'steward (request-bindings requests))]
+                     [unparsed-data (send master~ get-data 'one (string->number s-id))]
                      [current-time-diff (string->symbol (extract-binding/single 'time_diff (request-bindings requests)))]
                      [json-data (if (null? unparsed-data) 
                                     ""

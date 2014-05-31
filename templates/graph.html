@@ -61,7 +61,7 @@
 <div id="choices" style="float:right"></div>
 Change the time diffrence to:<br />
 @in[t time-diffs]{
-<a href="?page=@|current-page|&time_diff=@(car t)">@(cdr t)</a><br />
+<a href="?page=@|current-page|&time_diff=@(car t)@(if (equal? current-page "data_single_room") (string-append "&steward=" s-id) "")">@(cdr t)</a><br />
 }
 </div>
 

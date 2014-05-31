@@ -225,5 +225,12 @@
       (cond
         [(eq? which 'all)
          (send content-provider~ get-all-data)]
+        [(eq? which 'one)
+         (send content-provider~ 
+               get-data-for-device-ids
+               (map
+                (lambda (dev)
+                  (get-field id~ dev))
+                (send (get-steward (car options)) get-devices)))]
         [else
          (error "Cannot get-data for which is: " which)]))))

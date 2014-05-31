@@ -112,6 +112,24 @@
             (handle-data-result result)
             '())))
     
+    (define/public (get-data-for-device-ids device-id-list)
+      (let* ([where (let lp
+                      ((lst device-id-list)
+                       (str "WHERE device_id IN (")
+                       (first #t))
+                      (if (null? lst)
+                          (string-append str ")")
+                          (lp (cdr lst)
+                              (string-append str (if (not first) "," "") " '" (car lst) "'")
+                              #f)))]
+             [query (string-append "SELECT date, type, value, device_id FROM Data "
+                                   where 
+                                   " ORDER BY date ASC")]
+             [result (send db-manager~ execute/return query)])
+        (if (not (= (send result number-rows) 0))
+            (handle-data-result result)
+            '())))
+    
     ;Returns data for specific type
     (define/public (get-data-for-type type)
       (let* ([query (string-append 
