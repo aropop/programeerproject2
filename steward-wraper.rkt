@@ -131,9 +131,11 @@
         (set! searched-for-devices-once #t))      
       devices~)
     
+    ;Sends a message to a fysical device
     (define/public (send-message-to-device device-id mes)
       (send-to-pi `(send-message-to-device ,device-id ,mes)))
     
+    ;Returns the device type for a device
     (define/public (get-device-type device-id)
       (let 
           ((type (filter-map (lambda (device)
@@ -145,6 +147,7 @@
             (error "No device for id (get-device-type): " device-id)
             (car type))))
     
+    ;Returns cached device status
     (define/public (get-device-status device-id)
       (let ((type (filter-map (lambda (device)
                                 (and
@@ -155,6 +158,7 @@
             (error "No device for id (get-device-status): " device-id)
             (car type))))
     
+    ;Returns non-cached version of a status
     (define/public (get-devices-status-force-message device-id)
       (define dev (get-device device-id))
       (when (online?)
@@ -163,6 +167,7 @@
                                            (send-to-pi `(send-message-to-device ,device-id "GET"))
                                            device-id))))
     
+    ;Sends a message to all connected devices
     (define/public (message-all-devices mes)
       (send-to-pi `(send-message-to-all-devices ,mes)))
     
@@ -170,7 +175,7 @@
     (define/public (is-already-stored?)
       (> steward-id~ 0))
     
-    
+    ;Returns whether a certain device is connected
     (define/public (has-device? device-id)
       (let  ((lst (filter-map (lambda (device)
                                 (and
@@ -179,6 +184,7 @@
                               devices~)))
         (not (null? lst))))
     
+    ;Sets an id
     (define/public (set-id! id)
       (cond [(not (is-already-stored?))
              (set! steward-id~ id)

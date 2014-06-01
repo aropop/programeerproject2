@@ -238,8 +238,32 @@ Hieronder nog een bespreking van de overige noemsenwaardige procedures:
 \begin{itemize}
   	\item[connect-to-pi] stelt de verbinding op over TCP/IP. Vult de waardes van de input en output porten maar ook van de status.
   	\item[send-mes-to-pi] is de private procedure die de messages over de output-port schrijft.
+  	\item[get-device] geeft het juiste device object terug voor een gegeven device-id.
+  	\item[online?] predicaat dat zegt of de steward online (en dus operationeel) is.
+  	\item[get-device-count] zegt hoeveel devices er geconecteerd zijn aan deze steward.
+  	\item[get-devices] geeft een lijst met device objecten terug. Deze lijst is gecached aan de hand van de thread.
+  	\item[get-devices-force-discovery] gaat de devices effectief ophalen. Dit is de niet gecached versie.
+  	\item[send-message-to-device] verstuurt een bericht naar een device. Deze effectief naar de fysieke devices gestuurt en dus niet lokaal naar het object.
+  	\item[get-device-type] geeft het type van een device voor een bepaald device-id.
+  	\item[get-device-status] geeft de gecached versie van de status terug. Deze wordt geparsed naar typed-data objecten. De status van een device is het  resultaat van een "GET" message.
+  	\item[get-device-status-force-message] stuurt effectief de GET message om de status te bemachtigen.
+  	\item[message-all-devices] stuurt een bericht naar alle devices.
+  	\item[has-device?] predicaat dat zegt of een device verbonden is met deze steward.
 \end{itemize}
 % subsubsection steward (end)
+
+\subsubsection{Device wrapper}
+\label{ssub:device-wrapper}
+Net zoals de bij de steward, is er een abstractie van de devices die op de majordomo zelf draait. Deze wrapper heeft minder procedures en wordt meer gebruikt om data over het device op te slaan. Het heeft alle eigenschappen die een echt device ook heeft: een communicatie adres waar berichten naar worden verzonden, een plek in het huis waar het zich bevindt, een type (bijvoorbeeld ZBS-110). Als extra eigenschappen heeft het ook een status, deze wordt gezet door de thread in de steward, een boolean die zegt of het device effectief gevonden is en een boolean die zegt of het device al is opgeslagen in de database.\\
+Als procedures heeft het een serialize en deserialize procedure om het communicatie adres op te slaan. Er is echter een bug tussen racket en slip waardoor vectoren niet correct worden uitgelezen na een write over een output port. Hierdoor is het communicatie adres lokaal altijd null. Verder is er nog een procedure die het communicatie adres omzet in een leesbare string. Deze heeft met de bug ook niet veel nut.\\
+Net zoals de steward wrapper, is de device wrapper ook een implementatie van database-saveable en kunnen devices (die een deel uitmaken van de staat van het systeem) ook worden opgeslagen in de database.
+% subsubsection device-wrapper (end)
+
+\subsubsection{Database manager}
+\label{ssub:database-manager}
+Deze klasse is verantwoordelijk voor het beheer van de database. Wanneer de database nog niet is ge\"initialiseerd gaat deze klasse hiervoor zorgen. Het handelt ook alle intereactie met de database af. Als database software is gebruik gemaakt van sqlite3\footnote{http://sqlite.org}. Racket voorziet hiervoor een interface binnen de taal\footnote{http://docs.racket-lang.org/db/}.\\
+Het database bestand (sqlite slaat de database op in 1 bestand) is standaard \emph{./database/default} maar kan worden aangepast in het settingsbestand. De eigenschap install-query bevat een lijst met alle queries die worden gebruikt om de database aan te maken.
+% subsubsection database-manager (end)
 
 % subsection class (end)
 % subsection intro (end)
