@@ -66,11 +66,9 @@
                                                   (loop))
                                            (loop))))))))
     
-    
-    ;sends the message directely to the device 
-    (define/public (get-direct-data device-id message)
-      (let ([steward (get-steward-for-device device-id)])
-        (send steward get-data-from-device device-id message)))
+     ;Returns a list with all the rooms in the system
+    (define/public (get-all-rooms)
+      (send content-provider~ get-rooms))
     
     ;Getter for the steward list
     (define/public (get-stewards)
@@ -87,9 +85,6 @@
       (save)
       stew)
     
-    ;Returns a list with all the rooms in the system
-    (define/public (get-all-rooms)
-      (send content-provider~ get-rooms))
     
     ;Get the steward for the id
     (define/public (get-steward steward-id)
@@ -102,6 +97,19 @@
             (error "No steward for id (get-steward): " steward-id
                    (map (lambda (s) (get-field steward-id~ s)) stewards~))
             (car type))))
+    
+     ;returns the steward which has the device 
+    ;this adds an extra check whith correct error handling
+    (define/public (get-steward-for-device device-id)
+      (let ([filtered (filter-map (lambda (steward)
+                                    (and 
+                                     (send steward has-device? device-id)
+                                     steward))
+                                  stewards~)])
+        (if (null? filtered)
+            (error "No such device on any of the masters' stewards, device id:" device-id
+                   (map (lambda (s) (send s get-devices)) stewards~))
+            (car filtered))))
     
     ;Get actions
     (define/public (get-actions)
@@ -127,19 +135,22 @@
         (error "Cannot delete action id:" id))
       (send content-storer~ unstore action-to-delete))
     
+    ;Procedure will check all the actions, executed right after data-collects thread
+    ;so we have "fresh" information on the stewards
+    (define/private (check-actions)
+      (map
+       (lambda (action)
+         (let ([steward-d (get-steward-for-device
+                         (get-field destination-device-id~ action))]
+               [steward-s (get-steward-for-device
+                         (get-field source-device-id~ action))])
+         (send action execute steward-d steward-s)))
+       actions~)
+      (display "Checked all actions")
+      (newline))
     
-    ;returns the steward which has the device 
-    ;this adds an extra check whith correct error handling
-    (define/public (get-steward-for-device device-id)
-      (let ([filtered (filter-map (lambda (steward)
-                                    (and 
-                                     (send steward has-device? device-id)
-                                     steward))
-                                  stewards~)])
-        (if (null? filtered)
-            (error "No such device on any of the masters' stewards, device id:" device-id
-                   (map (lambda (s) (send s get-devices)) stewards~))
-            (car filtered))))
+    
+   
     
     ;Has to be called upon shutting the system down
     (define/public (destruct)
@@ -186,19 +197,7 @@
       (display "Collected data on ")
       (displayln (current-milliseconds)))
     
-    ;Procedure will check all the actions, executed right after data-collects thread
-    ;so we have "fresh" information on the stewards
-    (define/private (check-actions)
-      (map
-       (lambda (action)
-         (let ([steward-d (get-steward-for-device
-                         (get-field destination-device-id~ action))]
-               [steward-s (get-steward-for-device
-                         (get-field source-device-id~ action))])
-         (send action execute steward-d steward-s)))
-       actions~)
-      (display "Checked all actions")
-      (newline))
+    
     
     ;Procedure that returns facts about the system
     (define/public (get-facts fact)

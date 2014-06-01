@@ -94,7 +94,7 @@ Om het systeem te installeren is niet gebruik gemaakt van het racket packaging s
 	\item Pak de code uit naar een bepaalde map.
 	\item Open DrRacket, open het bestand \emph{start.rkt} en druk rechtsboven op \emph{Doen!}. 
 	\item[3b.] Moest het systeem niet snel genoeg lopen, kan in mac en linux via de commandline het commando \lstinline|racket start.rkt| worden uitgevoerd vanaf de map waarin de code zich bevindt. 
-	\item Een browser venster opent zich normaal met de interface. Indien dit niet het geval is kan er in een browser naar\\ \emph{http://localhost:8000/servlets/standalone.rkt} worden gesurfd.
+	\item Een browser venster opent zich normaal met de interface. Indien dit niet het geval is kan er in een browser naar\\ \emph{http://localhost:8000/servlets/standalone.rkt} worden gesurft.
 \end{enumerate}
 
 Om stewards te installeren moet het volgende worden gedaan.
@@ -135,16 +135,115 @@ Om de actie iets te laten uitvoeren met je een doeltoestel kiezen en een command
 Een uitgewerkt voorbeeld: De elektrische verwarming (aangesloten op een slimme plug) moet worden aangezet wanneer de temperatuur onder de 15 graden zakt. Het type is TEM van temperatuur. De waarde is 15, het doeltoestel is de plug waarin de elektrische verwarming zit, het brontoestel (source device) is de multimeter die te temperatuur in de kamer meet en gelijkheid is kleiner dan ($<$).\\
 Acties kunnen worden bekeken, verwijderd en toegevoegd op deze pagina.\\
 
-De laatste pagina is de data pagina. Op deze staat een korte intro over de data, een lijst met alle kamers waarin er data is verzameld, een link naar de grafiek met alle verzamelde data en een paar feiten over het systeem. Wanneer er wordt verder gegaan naar de data over bijvoorbeeld de badkamer, wordt er een grafiek weergegeven 
+De laatste pagina is de data pagina. De data die wordt verzameld zijn de status berichten van de verschillende devices, deze worden verzameld in de achtergrond door de majordomo. Op deze pagina staat een korte intro over de data, een lijst met alle kamers waarin er data is verzameld, een link naar de grafiek met alle verzamelde data en een paar feiten over het systeem. Wanneer er wordt verder gegaan naar de data over bijvoorbeeld de badkamer, wordt er een grafiek weergegeven voor de data die in die kamer is verzameld. Er kunnen verschillende data types worden weggelaten en andere tijdsperiodes gekozen. Wanneer er bijvoorbeeld voor minuten wordt gekozen wordt de data van de laatste minuten getoond. Hetzelfde voor dagen enzovoort.\\
 % subsection usage (end)
 
 
 \subsection{Screenshots}
 \label{sub:screenshots}
-
+\begin{figure}[htp]
+\centering
+\includegraphics[scale=0.30]{Screenshot1.png}
+\caption{Startscherm}
+\label{screen1}
+\end{figure}
+\begin{figure}[htp]
+\centering
+\includegraphics[scale=0.30]{Screenshot2.png}
+\caption{Steward scherm}
+\label{screen2}
+\end{figure}
+\begin{figure}[htp]
+\centering
+\includegraphics[scale=0.30]{Screenshot3.png}
+\caption{Toestel pagina}
+\label{screen3}
+\end{figure}
+\begin{figure}[htp]
+\centering
+\includegraphics[scale=0.30]{Screenshot4.png}
+\caption{Actie pagina}
+\label{screen4}
+\end{figure}
+\begin{figure}[htp]
+\centering
+\includegraphics[scale=0.30]{Screenshot5.png}
+\caption{Data grafiek}
+\label{screen5}
+\end{figure}
 % subsection screenshots (end)
 
 % section users (end)
+\newpage
+
+\section{Ontwikkelaars handleiding}
+\label{sec:developers}
+\subsection{Algemeen}
+\label{sub:intro}
+Hieronder volgt een beschrijving van het systeem voor ontwikkelaars. \\
+Zoals eerder vermeld bestaat het systeem uit 3 verschillende pionnen. De majordomo (master genoemd), de stewards en de devices. De master is geschreven in racket en maakt gebruik van het klasse systeem dat bestaat in racket. Terwijl de steward geschreven is in slip een variatie van R5RS.\\
+Er zijn enkele naming conventions in dit systeem. Eigenschappen van da objecten worden met een tilde geschreven. Bijvoorbeeld de master\ref{ssub:master} heeft als eigenschap een lijst met stewards. Deze wordt dan geschreven als $stewards\sim$.\\
+Klassen worden genoteerd met een percent teken achter, bijvoorbeeld \emph{master\%}.\\
+Omdat racket geen statische procedures ondersteunt (en alle publieke functies dus enkel kunnen worden opgeroepen met een instantie van een klasse), worden er waar nodig statische objecten aangemaakt. Dit zijn instanties van de klasse waar de data velden irrelevant zijn. Deze worden geschreven met een dollar teken achter. Bijvoorbeeld de statische variant van action wordt dan $action\$$.\\
+\subsection{Klasse overzicht majordomo}
+\label{sub:class}
+Hieronder staat uitleg bij alle klassen die op de master draaien.
+\subsubsection{Master}
+\label{ssub:master}
+Het kloppende hart van het systeem. Wanneer de klasse wordt aangemaakt moet de \textbf{init} procedure worden opgeroepen. Deze initialiseert de master, maakt een content-storer\ref{ssub:content-storer} en content-provider\ref{ssub:content-provider} klassen aan. Aan de content-provider gaat dan een lijst met stewards worden opgevraagd, deze worden op hun beurt dan ge\"initialiseerd. Verder vraagt het ook nog een lijst met acties op. Er worden ook 2 threads gestart. De eerste, save-thread, gaat na een bepaald interval de staat (stewards en devices) opslaan, dit gebeurt door de \textbf{save} procedure op te roepen. De andere gaat data verzamelen (statussen opvragen) en erna checken of er geen actions\ref{ssub:action} kunnen worden uitgevoerd. De procedures \textbf{collect-data} en \textbf{check-actions} zijn hier respectievelijk verantwoordelijk voor.\\
+Verder heeft de master nog volgende procedures, deze worden veelal door de front-end\ref{ssub:front-end} aangesproken.
+\begin{itemize}
+	\item[get-all-rooms] geeft een lijst met alle kamers die in het systeem zitten terug. Deze worden opgeslagen in de database. Meer kamers kunnen worden in de settings bestand worden toegevoegd.
+	\item[get-stewards] is een getter voor de stewards.
+	\item[add-steward] voegt een nieuwe steward toe, gegeven een ip adres (in de vorm van een string) en een poort. Deze wordt dan aan de lijst toegevoegd. Er wordt ook save opgeroepen omdat we een aangepaste staat hebben.
+	\item[get-steward] geeft het steward object terug voor een bepaald steward-id.
+	\item[get-steward-for-device] geeft de steward terug die het device heeft dat bij een bepaald device-id hoort.
+	\item[get-actions] geeft de lijst met actions terug.
+	\item[add-action] voegt een actie object toe aan de lijst. Dit object wordt direct opgeslagen door de content-storer.
+	\item[delete-action] gaat een action verwijderen. Er moet een id worden meegegeven. Deze wordt dan door de content-storer ook verwijderd uit de database.
+	\item[check-actions] gaat alle acties na. Er wordt telkens de execute procedure opgeroepen met het passend steward object. Zo wordt nagegaan of de actie al dan niet moet worden uitgevoerd.
+	\item[destruct] een destructor, deze gaat de threads be\"eindigen nadat een laatste keer de staat is gesaved.
+	\item[get-facts] is een dispatch functies die verdeelt tussen verschillende feiten. Zoals bijvoorbeeld hoeveel data objecten er al zijn verzameld.
+	\item[get-data] dient als tussen stuk tussen de front-end en de database met data objecten. 
+\end{itemize}
+% subsubsection master (end)
+
+\subsubsection{Front end}
+\label{ssub:front-end}
+In dit data object wordt de interface geladen. Omdat we met een webinterface werken, wordt al de opmaak en styling gedaan in HTML en CSS. Er wordt gebruik gemaakt van het dynamische template systeem dat in racket zit\footnote{http://docs.racket-lang.org/web-server/templates.html}. Dit gaat html bestanden inlezen en wanneer het een @ tegenkomt wordt alles wat erachter komt ge\"evalueerd. Wanneer er bijvoorbeeld @variabele staat, zal dit vervangen worden door de waarde van de variabele. Er kunnen ook expressies worden meegegeven en ge\"itereerd worden over lijsten. De HTML template bestanden staan in de template map van het project. Het stijl bestand staat in de root van het project.\\
+Om grafieken\footnote{http://www.flotcharts.org/} en een interactieve weergaven van berichten in  de interface te bekomen wordt er ook gebruik gemaakt van javascript en jQuery\footnote{http://jquery.com/}. Alle javascript libraries gebruikt in het project zijn te vinden in de js map. De gebruikte scripts (die zelf geschreven zijn) staan in de template bestanden waar ze worden toegepast.\\
+Om aan te tonen dat de front-end kan worden uitgewisseld met bijvoorbeeld een front-end geschreven in racket GUI, is er een abstracte klasse front-end met een start procedure. Deze wordt in dit project dan ge\"implementeerd door html-front-end.\\
+De belangrijkste procedure van deze klasse is \textbf{dispatche}. Deze neemt http requests en geeft responses terug. Dit gebeurt naargelang de aard van deze request. Bijvoorbeeld bij het opvragen van een pagina is er een GET request page met als waarde welke pagina er moet worden voorzien. \\
+Bij kleinere calls, zoals voor de status, die via ajax worden gestuurd wordt rauwe data terug gestuurd. Maar bij pagina requests wordt heel de html pagina teruggegeven.\\ 
+% subsubsection front-end (end)
+
+\subsubsection{Database saveable}
+\label{ssub:db-saveable}
+Is een abstrace klasse die bepaalt welke procedures klassen moeten hebben om te kunnen worden opgeslagen in de database. Hieronder een kleine uitleg bij elk van deze procedures:
+\begin{itemize}
+		\item[store-sql] geeft de sql query terug die het object opslaagt. Dit in de vorm van een string. Omdat bij een insert het object zijn id moet weten of hij bij het opslaan ook andere objecten moet opslaan, kan er ook een conscel worden teruggegeven. In de car zit dan de sql en in de cdr een lambda procedure, deze neemt 2 argumenten: het id waarmee het ge\"insered is en de content-storer zodat het ook andere objecten kan opslaan.
+		\item[get-sql] de select sql die nodig is om een object van dit type uit de database op te halen. Er moet wel nog een id worden achter geplakt. Dit is een statische procedure.
+		\item[create-lambda] is de lambda die evenveel argumenten neemt als er velden wordt geselecteerd door de get-sql. Als resultaat geeft het een nieuw object van dit type terug. Natuurlijk is dit ook een statische procedure.
+		\item[delete-sql] geeft de sql om de instatie van het object ter verwijderen uit de database.
+\end{itemize}
+% subsubsection db-saveable (end)
+
+\subsubsection{Steward wrapper}
+\label{ssub:steward}
+Deze klasse is een abstractie van de echte steward. Dit wil zeggen dat het een racket object is. Maar dat de procedures geen effectieve berekeningen doen. De oproepen worden doorgestuurd naar de echte steward over het TCP/IP protocol.\\
+De klassen implementeert de database-saveable klasse. Zo kunnen de stewards (die deel uitmaken van de staat van het systeem) persistent worden gemaakt. \\
+De klasse heeft als eigenschappen: een lijst van device objecten, een ip en poort waarover de connectie verloopt, een plaats, een verwijzing naar het master object, input- en outputport die gebruikt wordt om berichten te sturen naar de effectieve steward, een status die zegt of de echte steward wel online is, een communication lock die ervoor zorgt dat de thread niet interfereert met andere communicatie en een variabele die zegt of er al eens is gezocht voor devices.\\
+Bij het aanmaken van een instantie wordt er een thread ge\"initialiseerd, deze gaat in de achtergrond de devices en de status van elk device vragen. Deze wordt dan opgeslagen in respectievelijk dit object en het device object. Zo worden deze gegevens gecached.\\
+Hieronder nog een bespreking van de overige noemsenwaardige procedures:
+\begin{itemize}
+  	\item[connect-to-pi] stelt de verbinding op over TCP/IP. Vult de waardes van de input en output porten maar ook van de status.
+  	\item[send-mes-to-pi] is de private procedure die de messages over de output-port schrijft.
+\end{itemize}
+% subsubsection steward (end)
+
+% subsection class (end)
+% subsection intro (end)
+% section developers (end)
 
 
 \end{document}
