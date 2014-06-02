@@ -301,9 +301,7 @@
                                           (dev 'get-address) 
                                           (get-expectated-mes mes)))
              (end (- (bytevector-length frame) package-recieved-end-length)))
-        (displayln "test")
-        (let ((t
-        (bytevector->string frame package-recieved-data-offset end))) (displayln "test2é") t)))
+        (bytevector->string frame package-recieved-data-offset end)))
     
     (define (send-message-to-all-devices mes)
       (map

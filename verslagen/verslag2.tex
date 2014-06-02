@@ -99,12 +99,12 @@ Om het systeem te installeren is niet gebruik gemaakt van het racket packaging s
 
 Om stewards te installeren moet het volgende worden gedaan.
 \begin{enumerate}
-	\item Kopi\"eer de code in de map \emph{Raspberry} naar de raspberry pi.
+	\item Kopi\"eer .slip bestanden naar de raspberry pi.
 	\item Start via Televisie of scherm: 
 	\begin{enumerate}
 		\item Verbind je raspberry pi met een televisie of scherm. Zet hem aan.
 		\item Connecteer de zigbee module.
-		\item Login en ga via het cd (change directory) commando naar de map waarin je de inhoud van de map \emph{Raspberry} uit het archief hebt gekopi\"eerd.
+		\item Login en ga via het cd (change directory) commando naar de map waarin je de slip bestanden uit het archief hebt gekopi\"eerd.
 		\item Om het ip adres te vinden, druk je het commando \emph{ifconfig} onder eth0 (bekabeld) of wlan0 (wireless), het adres achter "inet addr:" is het ip adres van je steward. De standaard poort is 12345.
 		\item Voer het commando \emph{./slip} uit.
 		\item Nu moet je de code inladen, dit doe je door \emph{(load "run")} te typen en enter te drukken. 
@@ -232,13 +232,13 @@ Is een abstrace klasse die bepaalt welke procedures klassen moeten hebben om te 
 
 \subsubsection{Steward wrapper}
 \label{ssub:steward}
-Deze klasse is een abstractie van de echte steward. Dit wil zeggen dat het een racket object is. Maar dat de procedures geen effectieve berekeningen doen. De oproepen worden doorgestuurd naar de echte steward over het TCP/IP protocol.\\
+Deze klasse is een abstractie van de echte steward. Dit wil zeggen dat het een racket object is. Maar dat de procedures geen effectieve berekeningen doen. De oproepen worden doorgestuurd naar de echte steward over het TCP/IP protocol. De steward op de majordomo is hierbij de client, terwijl de echte steward fungeert als server. Dit wil zeggen dat de steward wrapper een connectie aanvraagt aan de echte steward.\\
 De klassen implementeert de database-saveable klasse. Zo kunnen de stewards (die deel uitmaken van de staat van het systeem) persistent worden gemaakt. \\
 De klasse heeft als eigenschappen: een lijst van device objecten, een ip en poort waarover de connectie verloopt, een plaats, een verwijzing naar het master object, input- en outputport die gebruikt wordt om berichten te sturen naar de effectieve steward, een status die zegt of de echte steward wel online is, een communication lock die ervoor zorgt dat de thread niet interfereert met andere communicatie en een variabele die zegt of er al eens is gezocht voor devices.\\
 Bij het aanmaken van een instantie wordt er een thread ge\"initialiseerd, deze gaat in de achtergrond de devices en de status van elk device vragen. Deze wordt dan opgeslagen in respectievelijk dit object en het device object. Zo worden deze gegevens gecached.\\
 Hieronder nog een bespreking van de overige noemsenwaardige procedures:
 \begin{itemize}
-  	\item[connect-to-pi] stelt de verbinding op over TCP/IP. Vult de waardes van de input en output porten maar ook van de status.
+  	\item[connect-to-pi] stelt de verbinding op over TCP/IP. Vult de waardes van de input en output porten maar ook van de status. 
   	\item[send-mes-to-pi] is de private procedure die de messages over de output-port schrijft.
   	\item[get-device] geeft het juiste device object terug voor een gegeven device-id.
   	\item[online?] predicaat dat zegt of de steward online (en dus operationeel) is.
@@ -347,18 +347,80 @@ Verder worden er nog een paar kleinere bestanden gebruikt. Macros bevat een macr
 
 \subsection{Klasse overzicht steward}
 \label{sub:class-steward}
+Naast de majordomo draait ook een klein deel van code op de steward. Deze zet de messages die het krijgt van de master (verstuurd vanuit de steward-wrapper\ref{ssub:steward}) en zet deze om naar het zigbee protocol. Verder is hij verantwoordelijk voor het ontdekken van devices binnen 1 kamer.\\
+De klassen op de steward draaien in slip\footnote{https://gitlab.soft.vub.ac.be/yvdriess/rpislip/}. Deze taal lijkt op R5RS en heeft dus ook geen native ondersteuning voor klassen. Om dit toch te verwezenlijken wordt gebruik gemaakt van een geneste procedure, die als resultaat een dispatch procedure teruggeeft. Via deze kunnen dan verscheidene procedures worden opgeroepen aan de hand van berichten (in de vorm van symbols).\\
+Merk op dat voor de slip versies van deze klassen ook een R5RS versie is. Deze is gelijkaardig aan de slip versie en wordt gebruikt voor de simulatie van het systeem\ref{sub:simulation}. Er is een kopie gemaakt in R5RS omdat slip nog steeds verscheidene bugs bevat (zoals memory leaks). Ook kan in R5RS racket code worden ge\"importeert, vermits de simulatie in racket is geschreven is dit handig.
+\subsubsection{Device}
+\label{ssub:device-on-steward}
+Dit is een simpele data klasse. Ze heeft dezelfde eigenschappen als de racket versie\ref{ssub:device-wrapper}. De enige procedure is \textbf{serialize} deze zet het device object om in een vector deze kan dan worden verzonden over de connectie naar het racket steward object.
+% subsubsection  (end)
+
+\subsubsection{Steward}
+\label{ssub:steward-slip}
+Deze klasse behandeld de messages die het krijgt van de majordomo. Er is een \textbf{dispatch} procedure die wordt gebruikt om de message die het krijgt te versturen naar de juiste procedure. Wanneer een steward object wordt aangemaakt zal er oneindig worden geloopt. Dit omdat er een connectie wordt opgestart door tcp-accept, waarna er telkens wordt gewacht tot er een bericht wordt gestuurd (read procedure blokkeert). Dit gebeurt in de \textbf{loop} procedure.\\
+Er zijn in deze klasse een hele hoop hulp procedures. Bij deze legt de naam de procedure helemaal uit. Sommig van deze procedures zijn procedures die in slip nog niet zijn ge\"implementeerd of in een bepaald stadium van de taal een bug bevatte. Om compatibel te blijven met oudere versies compatibel te blijven zijn deze nog aanwezig in de code. Een kleine opsomming:
+\begin{itemize}
+	\item displayln
+	\item error
+	\item bytevector-$>$hexvector 
+	\item bytevector-$>$string
+	\item list-$>$bytevector (voegt op het einde een linefeed (0x0A) toe)
+	\item bytevector-equal?
+	\item string-$>$list
+	\item substring
+	\item string-$>$bytevector
+\end{itemize}
+Bij het opstarten wordt via xbee-discover en xbee-list een lijst met devices gedetecteerd, deze moeten worden omgezet naar device objecten. Dit wordt gedaan door \textbf{create-device} over de lijst met die wordt teruggegeven uit xbee-list te mappen. Dit wordt gedaan in \textbf{build-device-list} die in elke loop wordt opgeroepen. Zo wordt voor elk bericht wordt afgehandeld de lijst met devices ge\"updatet.\\
+Het sturen van berichten naar een device gebeurt in \textbf{send-message-to-device}, deze gaat eerst kijken wat voor soort antwoord we verwachten van het device. Vermits er meerdere berichten van het device binnen komen, moet het bericht dat wij willen ontvangen gefilterd worden.  Daarna wordt het bericht omgezet naar een bytevector en verzonden. Het resulterende frame wordt dan terug omgezet naar een string en teruggegeven als resultaat van de procedure.\\
+\textbf{Send-bytes-to-device} behandelt het eigenlijke versturen van bytevectoren. De bytevector wordt weggeschreven via xbee-write, waarna er over de binnenkomende frames wordt geloopt. Pas wanneer alle frames zijn uitgelezen en er een ``goed'' antwoord binnen is stop deze lus. Het antwoord moet voldoen aan een verwachting. Dit voorkomt dat wanneer we een bericht sturen om een lamp aan te zetten, we een status bericht inlezen. Meer informatie over het protocol \ref{sub:protocol}.\\
+Om de devices tijd te geven om te antwoorden zijn er de procedures \textbf{sleep} en \textbf{sleep2} sleep gaat een bepaald aantal miliseconden wachten, sleep2 gaat wachten tot wanneer xbee-ready zegt dat er een frame kan worden uitgelezen.\\
+Er zijn op dit moment twee types van devices ondersteunt. Om meer types toe te voegen moet er in de lijst \textbf{SUPPORTED-DEVICES} een nieuwe vector worden toegevoegd. Op de eerste plaats moet een symbool met de naam van het soort device, op de tweede plaats moet de string van het exacte type device staan. Deze zijn standaard 6 characters lang. Op de derde plaats komt een beschrijvend type (bijvoorbeeld thermometer). De laatste plaats in de vector moet een lijst van conscellen komen. In elke conscel staat een bericht dat kan verstuurt worden en een verwacht antwoord. Dit kan het begin van een string zijn (bijvoorbeeld "ack") of de volledige string. Wanneer er geen specifiek antwoord nodig is kan er een symbool worden geplaatst.\\
+% subsubsection steward-slip (end)
 
 % subsection class-steward (end)
 
+
 \subsection{Protocol}
 \label{sub:protocol}
+Er worden 2 protocols gebruikt in dit systeem. E\'en om te communiceren tussen de majordomo en de steward en \'e\'en om te communiceren tussen de steward en de devices. Voor het eerste wordt gebruik gemaakt van het TCP/IP protocol. Voor het tweede wordt Zigbee gebruikt.
+\subsubsection{TCP/IP protocol}
+\label{ssub:tcp-ip}
+Vermits racket en slip een goed ondersteuning hebben voor tcp/ip is dit een simpel protocol. Wanneer er een connectie wordt aangemaakt worden er op server en client een input en output-port aangemaakt. Over deze poort kunnen alle (basis) datastructuren worden geschreven. Deze kunnen dan gemakkelijk worden uitgelezen aan de andere kant. Enkel de objecten moeten dus worden geserializeerd.\\
+De steward speelt hier de rol van server, hij kan enkel berichten ontvangen en de antwoorden terugschrijven. Er moet enkel een poort worden meegegeven aan tcp-accept, op deze poort zal geluisterd worden tot er een client zich aanmeld. De client is hier de majordomo, deze heeft het ip en de poort nodig waarop de steward luistert.\\
+Omdat we zo een goed ondersteuning hebben, is het oproepen van procedures vanaf de majordomo naar de steward eigenlijk heel erg simpel: er wordt een symbool gestuurd met mogelijk nog enkele argumenten, de steward dispatched dit symbool en schrijft het antwoord van de procedure terug. Alle mogelijke berichten zijn dus terug te vinden in de dispatch procedure van de steward. Hier kunnen er ook extra worden toegevoegd.
+% subsubsection tcp-ip (end)
 
+\subsubsection{Zigbee}
+\label{ssub:zigbee}
+Het zigbee protocol is ingewikkelder dan het TCP/IP protocol omdat er op een lager niveau moet gewerkt worden. Heel het protocol zit verwerkt in de steward en is geschreven in slip. Elk device heeft een device-id en een communicatie adres. Dit adres is een 64 bit bytevector. Om devices te vinden moet er \textbf{xbee-discover} worden opgeroepen, waarna een \textbf{xbee-tick} moet volgen. Deze gaat een broadcast bericht sturen naar alles devices. Na een bepaalde tijd zullen de antwoorden van deze devices binnenlopen. Omdat er een tijdje tussen de discover en het antwoord zit, worden de devices (id en communicatie adres) opgeslagen in een buffer. Deze kan worden uitgelezen door \textbf{xbee-list}. Dit gebeurt nog voor de communicatie met de majordomo wordt opgestart.\\
+Wanneer er een bericht moet worden gestuurd, moet dit bericht van string naar bytevector worden omgezet. Deze bytevector moet eindigen op 0x0A (linefeed). Daarna kan deze worden weggeschreven via \textbf{xbee-write}, dit gevolgd door \textbf{xbee-tick}. Er kunnen nu frames worden ingelezen. Dit gebeurt met de \textbf{xbee-read} procedure. Deze frames zijn bytevectors met variabele lengte. Op de eerst plaats in de vector staat steeds het frame-type. Er worden zijn twee significante frame-types. 0x90 is een data frame. Hierin zit data die een antwoord zou kunnen zijn op de boodschap die je zelf hebt gestuurd. 0x8B zijn recieve status frames. Deze frame zegt of je boodschap succesvol is verzonden. Wanneer dit het geval is wordt er gewacht op dit (0x90) frame. Anders wordt de boodschap opnieuw verzonden door xbee-write. Als er andere typen frames worden ingelezen worden deze genegeerd.\\
+Merk op dat het versturen en ontvangen van berichten naar devices lang kan duren. Dit komt door 2 redenen, het duurt lang voor een device een antwoord heeft gestuurd en de steward heeft een ingebouwde wacht procedure. Deze zal al een vaste tijd wachten tot er iets kan worden gelezen. Wanneer er een niet gesimuleerd bericht wordt verzonden kan dit tot 30 seconden duren voor dit echt aankomt. Dit hangt ook af van hoeveel keer de steward opnieuw moet proberen. Wanneer er vanuit de interface iets wordt gestuurd kan dit zelf langer zijn omdat eerst alle achtergrond messages moeten worden afgerond voordat het bericht dat is ingegeven kan worden verstuurd.
+% subsubsection zigbee (end)
 % subsection protocol (end)
 
-\subsection{Testing}
-\label{sub:testing}
+\subsection{Simulatie}
+\label{sub:simulation}
+Er is ook een simulatie van een de zigbee devices aanwezig. Deze is te vinden \emph{xbee-simulation.rkt}. Alle procedures van het zigbee protocol (inclusief bytevector procedures uit slip) worden geleverd vanuit dit bestand. De R5RS versie van de steward importeert dit bestand en kan dus enkel gebruikt worden voor de simulatie.\\
+Voorlopig worden er twee devices gesimuleerd, \'e\'en van elk ondersteund type. Nieuwe devices kunnen worden toegevoegd door ze aan de \textbf{SIM-DEVICES} lijst toe te voegen. Dit zijn de simpele device objecten. Er moet dan ook voor elke message die het device een vector aan \textbf{MESSAGES} worden toegevoegd. Deze vector staat en string versie van het bericht, een bytevector versie van het bericht, het antwoord frame (bytevector) en een lambda die wordt uitgevoerd voor het bericht in de antwoord queue wordt gestopt.\\
+Wanneer er een frame wordt weggeschreven wordt het antwoord gezocht in \textbf{MESSAGES} eerst wordt dan de lambda uitgevoerd en dan wordt het in de \textbf{ANSWERS} lijst gestopt. Er wordt ook een succesvol status frame in deze lijst gestopt. Wanneer er dan een xbee-read optreed wordt het eerste element van de lijst teruggegeven.\\
+Een simulatie van de steward kan worden gestart door start-simulation.rkt uit te voeren.
+% subsection simulation (end)
 
-% subsection testing (end)
+% subsubsection  (end)
+
+\subsection{Overzicht gebruikte talen en libraries}
+\label{sub:langs}
+\begin{itemize}
+	\item[\textbf{Racket}] Code op de majordomo.
+	\item[\textbf{Slip}] Code op de steward.
+	\item[\textbf{R5RS}] Simulatie van de steward.
+	\item[\textbf{HTML \& CSS}] Grafische interface.
+	\item[\textbf{Javascript \& jQuery}] Interactieve elementen van de interface.
+	\item[\textbf{Flot}] Weergeven van grafieken in de interface.
+	\item[\textbf{sqlite3}] Database software.
+\end{itemize}
+% subsubsection langs (end)
+
 
 % section developers (end)
 
