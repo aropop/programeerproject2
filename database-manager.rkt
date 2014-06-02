@@ -135,5 +135,6 @@ steward_id INTEGER REFERENCES Steward(steward_id) ON UPDATE RESTRICT ON DELETE C
            (table-exists? con~ "Steward")
            (table-exists? con~ "Room")
            (table-exists? con~ "Device")
+           (table-exists? con~ "Action")
            (table-exists? con~ "Data"))
           (error "Database error, no connection!")))))

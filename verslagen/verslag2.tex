@@ -78,7 +78,7 @@ In dit deel zal er worden uitgelegd hoe je het systeem gebruikt. Er is een opsom
 \item Ondersteuning voor 2 type devices: ZBS-110 (plug) en ZBS-121 (multimeter).
 \item Ophalen van data in de achtergrond. Deze data is wat de verschillende devices als metingen teruggeven.
 \item Overzicht waar je de opgehaalde data kan bekijken. Dit kan per kamer of over heel het systeem. Er kunnen waarden worden weggefilterd en er kan voor bepaalde tijdsperioden worden gekozen.
-\item Zelf toevoegen van acties. Dit zijn regels die zelf kunnen worden samengesteld. Voor meer uitleg, zie gebruik\ref{sub:actions}.
+\item Zelf toevoegen van acties. Dit zijn regels die zelf kunnen worden samengesteld. Voor meer uitleg, zie gebruik\ref{sub:usage}.
 \item Staat van het systeem wordt persistent opgeslagen. Devices, stewards, acties en data worden veilig opgeslagen. Moest het systeem falen, kan het bij opnieuw opstarten direct hervatten.
 \item Stewards en majordomo overleven wanneer de connectie wegvalt. Deze zullen wachten tot er een nieuwe connectie kan worden opgesteld.
 \item Mogelijkheid tot simuleren van stewards om te testen.
@@ -130,7 +130,7 @@ Er kan ook een steward worden toegevoegd. Dit wordt gedaan door in de laatste ko
 De pagina Devices toont een tabel met alle slimme toestellen die ondersteunt worden (voorlopig enkel ZBS-110 en ZBS-121). Er kan verschillende informatie over elk toestel worden gelezen. Alsook een status bericht, dit toont in welke staat het toestel zich bevindt. Bij de ZBS-110 (plug) bijvoorbeeld zal er komen wat de werklast is en of het toestel aan staat of niet. \\
 Het is ook mogelijk om rechtstreeks naar het toestel een bericht te sturen. Dit kan in de laatste kolom van de tabel. Merk wel op dat dit een tijdje kan duren, het systeem moet namelijk eerst de berichten die in de achtergrond worden verstuurt afronden en erna het gegeven bericht sturen. Het sturen van een bericht duurt gebruikelijk 10 seconden. Nadat het bericht is verstuurt verschijnt het resultaat in dezelfde kolom als waar het bericht is ingegeven. Merk op dat het systeem zelf toestellen detecteert en deze dus niet handmatig kunnen worden toegevoegd. Het instoppen van toestellen is voldoende.\\
 
-Op de Actions pagina kunnen de acties worden beheert. Een actie bestaat uit een conditie, wanneer deze conditie waar is zal een bepaalde actie worden uitgevoerd. Elke actie heeft een source device, dit is een toestel waaruit de informatie voor de conditie wordt gelezen. De conditie bestaat uit een type, bij temperatuur is dit bijvoorbeeld "TEM"\footnote{Alle types kunnen worden teruggevonden bij de status van toestellen}. Er moet ook een waarde worden meegegeven (bijvoorbeeld 20, van $20\,^{\circ}\mathrm{C}$) en een gelijkheid (bijvoorbeeld kleiner dan).\\
+\label{subsec:actiondescription}Op de Actions pagina kunnen de acties worden beheert. Een actie bestaat uit een conditie, wanneer deze conditie waar is zal een bepaalde actie worden uitgevoerd. Elke actie heeft een source device, dit is een toestel waaruit de informatie voor de conditie wordt gelezen. De conditie bestaat uit een type, bij temperatuur is dit bijvoorbeeld "TEM"\footnote{Alle types kunnen worden teruggevonden bij de status van toestellen}. Er moet ook een waarde worden meegegeven (bijvoorbeeld 20, van $20\,^{\circ}\mathrm{C}$) en een gelijkheid (bijvoorbeeld kleiner dan).\\
 Om de actie iets te laten uitvoeren met je een doeltoestel kiezen en een commando ingeven. Dit commando zal dan naar het toestel worden gestuurd wanneer de conditie waar is.\\
 Een uitgewerkt voorbeeld: De elektrische verwarming (aangesloten op een slimme plug) moet worden aangezet wanneer de temperatuur onder de 15 graden zakt. Het type is TEM van temperatuur. De waarde is 15, het doeltoestel is de plug waarin de elektrische verwarming zit, het brontoestel (source device) is de multimeter die te temperatuur in de kamer meet en gelijkheid is kleiner dan ($<$).\\
 Acties kunnen worden bekeken, verwijderd en toegevoegd op deze pagina.\\
@@ -185,6 +185,8 @@ Zoals eerder vermeld bestaat het systeem uit 3 verschillende pionnen. De majordo
 Er zijn enkele naming conventions in dit systeem. Eigenschappen van da objecten worden met een tilde geschreven. Bijvoorbeeld de master\ref{ssub:master} heeft als eigenschap een lijst met stewards. Deze wordt dan geschreven als $stewards\sim$.\\
 Klassen worden genoteerd met een percent teken achter, bijvoorbeeld \emph{master\%}.\\
 Omdat racket geen statische procedures ondersteunt (en alle publieke functies dus enkel kunnen worden opgeroepen met een instantie van een klasse), worden er waar nodig statische objecten aangemaakt. Dit zijn instanties van de klasse waar de data velden irrelevant zijn. Deze worden geschreven met een dollar teken achter. Bijvoorbeeld de statische variant van action wordt dan $action\$$.\\
+% subsection intro (end)
+
 \subsection{Klasse overzicht majordomo}
 \label{sub:class}
 Hieronder staat uitleg bij alle klassen die op de master draaien.
@@ -210,10 +212,10 @@ Verder heeft de master nog volgende procedures, deze worden veelal door de front
 
 \subsubsection{Front end}
 \label{ssub:front-end}
-In dit data object wordt de interface geladen. Omdat we met een webinterface werken, wordt al de opmaak en styling gedaan in HTML en CSS. Er wordt gebruik gemaakt van het dynamische template systeem dat in racket zit\footnote{http://docs.racket-lang.org/web-server/templates.html}. Dit gaat html bestanden inlezen en wanneer het een @ tegenkomt wordt alles wat erachter komt ge\"evalueerd. Wanneer er bijvoorbeeld @variabele staat, zal dit vervangen worden door de waarde van de variabele. Er kunnen ook expressies worden meegegeven en ge\"itereerd worden over lijsten. De HTML template bestanden staan in de template map van het project. Het stijl bestand staat in de root van het project.\\
+In dit data object wordt de interface geladen. Omdat we met een webinterface werken, wordt al de opmaak en styling gedaan in HTML en CSS. Er wordt gebruik gemaakt van het dynamische template systeem dat in racket zit\footnote{http://docs.racket-lang.org/web-server/templates.html}. Dit gaat html bestanden inlezen en wanneer het een @ tegenkomt wordt alles wat erachter komt ge\"evalueerd. Wanneer er bijvoorbeeld @variabele staat, zal dit vervangen worden door de waarde van de variabele. Er kunnen ook expressies worden meegegeven en ge\"itereerd worden over lijsten. De HTML template bestanden staan in de template map van het project. Het stijl bestand staat in de root van het project. De gebruikte iconen en afbeeldingen zijn te vinden in de images map.\\
 Om grafieken\footnote{http://www.flotcharts.org/} en een interactieve weergaven van berichten in  de interface te bekomen wordt er ook gebruik gemaakt van javascript en jQuery\footnote{http://jquery.com/}. Alle javascript libraries gebruikt in het project zijn te vinden in de js map. De gebruikte scripts (die zelf geschreven zijn) staan in de template bestanden waar ze worden toegepast.\\
 Om aan te tonen dat de front-end kan worden uitgewisseld met bijvoorbeeld een front-end geschreven in racket GUI, is er een abstracte klasse front-end met een start procedure. Deze wordt in dit project dan ge\"implementeerd door html-front-end.\\
-De belangrijkste procedure van deze klasse is \textbf{dispatche}. Deze neemt http requests en geeft responses terug. Dit gebeurt naargelang de aard van deze request. Bijvoorbeeld bij het opvragen van een pagina is er een GET request page met als waarde welke pagina er moet worden voorzien. \\
+De belangrijkste procedure van deze klasse is \textbf{dispatch}. Deze neemt http requests en geeft responses terug. Dit gebeurt naargelang de aard van deze request. Bijvoorbeeld bij het opvragen van een pagina is er een GET request page met als waarde welke pagina er moet worden voorzien. \\
 Bij kleinere calls, zoals voor de status, die via ajax worden gestuurd wordt rauwe data terug gestuurd. Maar bij pagina requests wordt heel de html pagina teruggegeven.\\ 
 % subsubsection front-end (end)
 
@@ -262,11 +264,102 @@ Net zoals de steward wrapper, is de device wrapper ook een implementatie van dat
 \subsubsection{Database manager}
 \label{ssub:database-manager}
 Deze klasse is verantwoordelijk voor het beheer van de database. Wanneer de database nog niet is ge\"initialiseerd gaat deze klasse hiervoor zorgen. Het handelt ook alle intereactie met de database af. Als database software is gebruik gemaakt van sqlite3\footnote{http://sqlite.org}. Racket voorziet hiervoor een interface binnen de taal\footnote{http://docs.racket-lang.org/db/}.\\
-Het database bestand (sqlite slaat de database op in 1 bestand) is standaard \emph{./database/default} maar kan worden aangepast in het settingsbestand. De eigenschap install-query bevat een lijst met alle queries die worden gebruikt om de database aan te maken.
+Het database bestand (sqlite slaat de database op in 1 bestand) is standaard \emph{./database/default} maar kan worden aangepast in het settingsbestand. De eigenschap install-query bevat een lijst met alle queries die worden gebruikt om de database aan te maken. Dit zijn voornamelijk create tables. Maar er wordt ook een lijst van kamers ingevoegd. Ook deze kan worden aangepast in het settingsbestand\ref{ssub:rest}.\\
+Er zijn 5 tabellen die worden gebruikt:
+\begin{itemize}
+\item[Action] is de tabel waar de acties worden in opgeslagen. Deze onthoud een id, het type, de waarde, het commando, de gelijkheid, het doeldevice en het bron device.
+\item[Data] deze tabel slaagt een timestamp, type, waarde en het device waarvan het komt op voor een stuk data.
+\item[Steward] slaag het ip, de poort en de room op voor een steward. De steward krijgt ook een id om zich te kunnen identificeren.
+\item[Device] houdt het device-id, type, communicatie adres en de steward waarbij het device hoort op.
+\item[Room] een simpele tabel met 1 kolom de naam van de kamer.
+\end{itemize}
+Als voornamelijkste procedures zijn er de execute procedures, deze voeren een sql query uit. Er zijn 2 varianten: \textbf{execute/return} gaat het resultaat van de query parsen in db-table-data\ref{ssub:db-table-data}, bij \textbf{execute/no-reuturn} wordt het resultaat genegeerd. Dit maakt het uitvoeren van queries zonder resultaat performanter.\\
+Verder is er nog \textbf{last-inserted-id} die de primary key terug geeft van de laatst uitgevoerde query en 2 hulp procedures die initialiseren als dat nog niet is gebeurt (\textbf{do-init-test} en \textbf{is-table-installed?}.
 % subsubsection database-manager (end)
 
+\subsubsection{Database table data}
+\label{ssub:db-table-data}
+Deze klasse zorgt voor een abstractie van het resultaat dat je krijgt bij het uitvoeren van een sql query. Het heeft als eigenschappen een index die bijhoud welke rij er verwerkt wordt, at-end die bijhoud of we op het einde van de data zitten, het data element zelf, dit is een lijst van vectoren,  de huidige rij (current-rows) en hoeveel rijen er zijn.\\
+Een overzicht van de procedures:
+\begin{itemize}
+	\item[get-next-row] geeft de volgende rij terug als vector.
+	\item[get-current-row-colum] geeft de waarde in de huidige rij op een bepaalde kolom terug.
+	\item[get-colum] geeft een hele kolom als lijst terug.
+	\item[number-of-rows] geeft het aantal rijen terug. Dit aantal wordt slechts 1 maal geteld door length.
+	\item[get-next-row-colum] geeft een bepaalde kolom van de volgende rij terug. 
+\end{itemize}
+% subsubsection db-table-data (end)
+
+\subsubsection{Content storer}
+\label{ssub:content-storer}
+Deze klasse slaagt objecten (waarvan de klasse de database-saveable abstrace klasse uitbreid) op in de database. Dit gebeurt in de \textbf{store} procedure. Deze maakt gebruik van de store-sql procedure. De klasse is ook verantwoordelijk voor het verwijderen van objecten uit de database. Dit wordt enkel gebruikt door de action klasse. De procedure die dit doet is \textbf{unstore}.
+% subsubsection content-storer (end)
+
+\subsubsection{Content provider}
+\label{ssub:content-provider}
+De content-provider klasse levert objecten die opgeslagen zijn in de database. Omdat niet alle objecten op dezelfde manier kunnen worden opgehaald (stewards moeten hun devices ophalen bijvoorbeeld) is er voor elk soort van object een aparte procedure. De meeste hebben wel dezelfde structuur. Ze sturen een sql query naar de database-manager, de database-table-data die het resultaat van de query wordt dan gebruikt om een nieuw object aan te maken. Dit wordt dan in een lijst met de andere objecten teruggegeven. De volgende lijst geeft een overzicht van alle procedures:
+\begin{itemize}
+		\item[get-stewards] geeft een lijst met alle opgeslagen stewards. De master moet als argument worden meegegeven omdat deze nodig is bij de aanmaak van een steward object.
+		\item[get-devices] geeft als resultaat een lijst van devices die bij een bepaald steward-id horen, de plaats waar deze devices zich bevinden moet ook als argumenten worden meegegeven.
+		\item[get-actions] geeft een lijst met de opgeslagen action objecten.
+		\item[get-rooms] geeft een lijst met alle opgeslagen kamers terug.
+		\item[get-all-data] maakt een lijst met alle opgeslagen data.
+		\item[get-data-for-device-type] geeft de data voor een bepaald device type.
+		\item[get-data-for-device-ids] geeft alle data verzameld door bepaalde devices.
+		\item[handle-data] priv\'e procedure die de query voor data verwerkt.
+		\item[get-amount-of-data] berekent het aantal elementen in de data tabel.
+		\item[last-data-stored-timestamp] geeft van het laatste opgeslagen data object de timestamp terug. 
+\end{itemize}
+% subsubsection content-provider (end)
+
+\subsubsection{Action}
+\label{ssub:action}
+De functionaliteit van een actie wordt beschreven in de gebruikershandleiding\ref{subsec:actiondescription}. Hier zal enkel over de implementatie worden gesproken van deze klasse.\\
+Deze klasse implementeert ook de database-saveable klasse, zo kan ze gemakkelijk worden opgeslagen.\\
+Er zijn een aantal gelijkheden die worden ondersteund. Er kunnen gemakkelijk nieuwe worden toegevoegd, dit kan door in het action.rkt bestand bij supported-equalities een nieuwe conscel toe te voegen. In de car moet dan een string representatie van de gelijkheid zitten en in de cdr een lambda die 2 elementen vergelijkt.\\
+De belangrijkste procedure van deze klasse is \textbf{execute}, deze gaat de actie uitvoeren als de gelijkheid true geeft. Hiervoor worden 2 steward objecten gevraagd. Bij de eerste gaat de status van het brondevice worden opgevraagd. Dan wordt de gelijkheid berekent als deze true geeft, wordt het commando via de tweede steward naar het doeldevice gestuurd.\\
+Verder is er nog een \textbf{serialize-eq} en \textbf{deserialize-eq} procedure om de gelijkheid om te zetten naar een string.\\
+% subsubsection action (end)
+
+\subsubsection{Generic data}
+\label{ssub:generic-data}
+Deze klasse stelt allerhande data voor. De data wordt opgesplits in een naam (of type) met een waarde. Naar gelang het gebruik wordt deze 3 keer uitgebreid. Telkens wordt er een waarde toegevoegd, hieronder een overzicht.
+\begin{itemize}
+	\item[Generic-data] de basis klasse, onthoud enkel een naam en waarde en heeft hiervoor getters en setters\footnote{simpele procedures die een waarde teruggeven of aanpassen.}.
+	\item[Response-message] deze klasse heeft als extra eigenschap een device-id waarvan de message afkomstig is. De naam wordt hier gebruikt als type van data bij temperatuur bijvoorbeeld TEM.
+	\item[Typed-data] deze data is een response message maar de data wordt ge\"interpreteerd als data van een bepaald type, zoals bijvoorbeeld temperatuur e.a.
+	\item[Dated-data] dit is typed-data die uit de database komt. Bij opslaan krijgt de data namelijk een timestamp wat de extra eigenschap is van deze klasse. Er zijn ook enkele procedures om de tijdseenheden gemakkelijk uit te lezen. De timestamp is namelijk een string.
+\end{itemize}
+% subsubsection generic-data (end)
+
+\subsubsection{Parser}
+\label{ssub:parser}
+Dit is een statische klasse (dit wil zeggen dat het geen nut heeft om er een instantie van te maken) en heeft dus enkel publieke procedures die niet afhankelijk zijn van een bepaalde staat.\\
+De klasse bevat procedures die strings omzet naar generic-data objecten (of een uitgebreidere klasse hiervan) en omgekeerd. Dit is nodig in twee gevallen: wanneer we een message krijgen van een device (\textbf{parse-message}) en wanneer we een json lijst moeten maken voor flot (\textbf{unparse-to-json}).\\
+% subsubsection parser (end)
+
+\subsubsection{Overige}
+\label{ssub:rest}
+Verder worden er nog een paar kleinere bestanden gebruikt. Macros bevat een macro die het defini\"eren van verschillende waarden in racket versimpeld. Settings bevat een lijst met opties, deze kan je als ontwikkelaar zelf aanpassen om het systeem beter naar de eigen wensen te doen werken. Start is een script dat het systeem gaat opstarten. Start-simulation gaat een simulatie van een steward opstarten. Deze draait dan op het ip van de computer waarop die gestart is. Als data dezelfde is dan de majordomo kan gebruik gemaakt worden van ``localhost" of ``127.0.0.1" om ernaar te verwijzen.
+% subsubsection rest (end)
+
 % subsection class (end)
-% subsection intro (end)
+
+\subsection{Klasse overzicht steward}
+\label{sub:class-steward}
+
+% subsection class-steward (end)
+
+\subsection{Protocol}
+\label{sub:protocol}
+
+% subsection protocol (end)
+
+\subsection{Testing}
+\label{sub:testing}
+
+% subsection testing (end)
+
 % section developers (end)
 
 

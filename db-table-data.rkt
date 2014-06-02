@@ -74,7 +74,4 @@
     (define/public (at-end?)
       (or
        (>= index~ (number-rows))
-       (empty? current-row~)))
-    
-    )
-  )
+       (empty? current-row~)))))

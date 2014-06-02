@@ -39,24 +39,6 @@
                          [device-id device-id]))
                   splitted))])))
     
-    ;returns an x-expression for this specific generic-data object
-    (define/public (unparse-generic-data generic-data-type)
-      (list (get-field name~ generic-data-type)
-            (get-field value~ generic-data-type)))
-    
-    ;Makes a get X-expression
-    (define/public (unparse-get list-of-generic-data-types)
-      (cons 'GET (map (lambda (x) ;lambda is required because in classes procedures should always be in an application
-                        (unparse-generic-data x))
-                      list-of-generic-data-types)))
-    
-    
-    ;Makes a put X-expression
-    (define/public (unparse-put list-of-generic-data-types)
-      (cons 'PUT (map (lambda (x) 
-                        (unparse-generic-data x))
-                      list-of-generic-data-types)))
-    
     ;unparses list of dated objects to json expressions
     (define/public (unparse-to-json list-of-dated-objects time-diff) ;time-diff is a symbol day, month, year
       (define filter-val

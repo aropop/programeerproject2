@@ -11,10 +11,10 @@
 
 (define SUPPORTED-DEVICES
   (list 
-   (vector 'plug "ZBS-110" "Plug" (list (cons "GET" 'not) 
+   (vector 'plug "ZBS110" "Plug" (list (cons "GET" 'not) 
                                         (cons "SET POW=ON" "ack: set pow=on") 
                                         (cons "SET POW=OFF" "ack: set pow=off")))
-   (vector 'multiSensor "ZBS-121" "MultiSensor" '())))
+   (vector 'multiSensor "ZBS121" "MultiSensor" '())))
 
 (define package-recieved-code 144)
 (define package-recieved-data-offset 12)
@@ -191,6 +191,18 @@
             (lp (- i 1) (cons (string-ref str i) lst))))
       (lp (- l 1) '()))
     
+    
+    ;Slip has not yet implemented this procedure so we define it here
+    (define (substring str i1 i2)
+      (define new-string (make-string (- i2 i1) #\a))
+      (define (lp idx)
+        (if (>= idx i2)
+            new-string
+            (begin
+              (string-set! new-string idx (string-ref str (+ i1 idx)))
+              (lp (+ idx 1)))))
+      (lp 0))
+    
     ;Converts a message into a bytevector to send
     (define (string->bytevector string)
       (list->bytevector (map char->integer (string->list string)))) 
@@ -248,7 +260,8 @@
                                                          package-recieved-data-offset 
                                                          (- (bytevector-length current-frame) 
                                                             package-recieved-end-length)))
-                 (set! last-good-frame current-frame))
+                 (set! last-good-frame current-frame)
+                 (displayln "Content did not satisfy!"))
              (read-loop))
             ;Transmit info package
             ((= (frame-type current-frame) package-transmit-info-code)
@@ -288,7 +301,9 @@
                                           (dev 'get-address) 
                                           (get-expectated-mes mes)))
              (end (- (bytevector-length frame) package-recieved-end-length)))
-        (bytevector->string frame package-recieved-data-offset end)))
+        (displayln "test")
+        (let ((t
+        (bytevector->string frame package-recieved-data-offset end))) (displayln "test2é") t)))
     
     (define (send-message-to-all-devices mes)
       (map
@@ -299,12 +314,13 @@
     ;Creates a device object from an xbee-node
     (define (create-device xbee-node)
       (define (supported? type lst)
+        (display type)(displayln ":::::")
         (cond ((null? lst) #f)
               ((equal? type (vector-ref (car lst) 1)) #t)
               (else (supported? type (cdr lst)))))
       (define (get-device-type idstring)
-        (if (>= (string-length idstring) 7)
-            (substring idstring 0 7)
+        (if (>= (string-length idstring) 6)
+            (substring idstring 0 6)
             idstring))
       (if (supported? (get-device-type (car xbee-node)) SUPPORTED-DEVICES)
           (device-slip
@@ -345,6 +361,7 @@
     
     
     (define (dispatch mes . args)
+      (set! args (car args))
       (cond 
         ((eq? mes 'has-device) (apply has-device args))
         ((eq? mes 'is-already-stored?) (is-already-stored?))
